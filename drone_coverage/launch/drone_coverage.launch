@@ -1,0 +1,7 @@
+<launch>
+    <!-- This launch file requires the drones names as argument -->
+    <arg name="drones_names" />
+    <node name="drone_coverage" pkg="drone_coverage" type="drone_coverage.py" output="screen">
+        <param name="drones_names" type="string" value="$(arg drones_names)" />
+    </node>
+</launch>

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>graph_loader</name>
+  <version>0.0.0</version>
+  <description>The graph_loader package</description>
+  <maintainer email="ilmusu@todo.todo">ilmusu</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>tf</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>drone_coverage_msgs</build_depend>
+
+  <exec_depend>tf</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>drone_coverage_msgs</exec_depend>
+
+</package>

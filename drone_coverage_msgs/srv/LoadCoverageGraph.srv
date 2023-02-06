@@ -1,0 +1,11 @@
+## REQUEST
+
+# The location of the graph int the file system
+string location
+
+---
+
+# RESPONSE
+
+# If the loading of the graph was successfull
+bool success

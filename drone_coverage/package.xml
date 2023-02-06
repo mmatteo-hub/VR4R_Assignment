@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>drone_coverage</name>
+  <version>0.0.0</version>
+  <description>The drone_coverage package</description>
+  <maintainer email="ilmusu@todo.todo">ilmusu</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>tf</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>airsim_ros_pkgs</build_depend>
+  <build_depend>drone_coverage_msgs</build_depend>
+
+  <exec_depend>tf</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>airsim_ros_pkgs</exec_depend>
+  <exec_depend>drone_coverage_msgs</exec_depend>
+
+</package>
