@@ -34,7 +34,7 @@ class GraphLoader:
         )
         # Initializing a publisher for publishing a new coverage path
         self._path_pub = rospy.Publisher(
-            rospy.get_name()+"/path", CoveragePath, queue_size=1, latch=True
+            rospy.get_name()+"/path", CoveragePath, queue_size=1
         )
         rospy.loginfo("Waiting for graph...")
 
