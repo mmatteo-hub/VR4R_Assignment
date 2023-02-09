@@ -124,14 +124,16 @@ class PidDroneController :
         self._home_pose.yaw = self._gps_home_pose.yaw
         self._gps_sub.unregister()
         # Debugging
-        rospy.loginfo("[PID "+self._drone_name+"] Found home at x:"+str(home[0])+" y:"+str(home[1])+ " z:"+str(home[2]))
+        ix = "{:.2f}".format(home[0])
+        iy = "{:.2f}".format(home[1])
+        iz = "{:.2f}".format(home[2])
+        rospy.loginfo("[PID "+self._drone_name+"] Obtained initial position at [x:"+ix+" y:"+iy+ " z:"+iz+"]!")
     
 
     def _on_drone_odometry(self, msg):
         # Waiting for the home position before computing current position
         if not self._has_home :
             return
-        self._has_odom = True
         # Storing the current position and orientation of the drone
         self._current_pose.x = msg.pose.pose.position.x + self._home_pose.x
         self._current_pose.y = msg.pose.pose.position.y + self._home_pose.y
@@ -140,6 +142,10 @@ class PidDroneController :
         quat = msg.pose.pose.orientation
         quat_expl = [quat.x, quat.y, quat.z, quat.w]
         self._current_pose.yaw = euler_from_quaternion(quat_expl)[2]
+        # Debugging
+        if not self._has_odom :
+            rospy.loginfo("[PID "+self._drone_name+"] First odometry received!")
+            self._has_odom = True
 
     
     def _on_local_goal_service(self, req):
@@ -179,17 +185,15 @@ class PidDroneController :
     def _update_drone_velocity(self, event):
         # Check if the current position for the drone is available
         if not self._has_home :
-            rospy.logerr_once("[PID "+self._drone_name+"] Waiting for home pose!")
+            rospy.logwarn_once("[PID "+self._drone_name+"] Waiting for initial position!")
             return
         if not self._has_odom :
-            rospy.logerr_once("[PID "+self._drone_name+"] Waiting for odometry!")
+            rospy.logwarn_once("[PID "+self._drone_name+"] Waiting for first odometry!")
             return
         # Check if the current goal has already been reached
         self._check_goal_reached()
         if self._reached_goal :
             return
-        # Moving to the current goal position
-        rospy.loginfo("[PID "+self._drone_name+"] Moving to current goal pose...")
         # Creating the new velocity for the drone
         vel = self._compute_new_velocity()
         self._enforce_dynamic_constraints(vel)
