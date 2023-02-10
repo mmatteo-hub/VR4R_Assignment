@@ -17,15 +17,17 @@ Our project focuses on conducting periodic surveillance in difficult-to-reach ar
 ## <img src="https://user-images.githubusercontent.com/62358773/217943552-91531ae2-6c37-4034-aac4-2f33d189d112.png" width="5%" height="5%"> Run the code
 In order to run the code follow these steps:
 ```bash
-# Run the ROS Wrapper
+# Run the AirSim ROS Wrapper
 roslaunch airsim_ros_pkgs airsim_node.launch output:=screen host:=192.168.1.17
+
+# Run the Drone Coverage
+python ./run.py
 
 # Load the map
 rosservice call /graph_loader/load_graph "location: '/path_to_workspace/src/graph_loader/graphs/mountain_graph.json'"
 
-# Eventually for computing the path
-rosservice call /airsim_node/Drone0/takeoff "waitOnLastTask: false"
-rosservice call "{latitude: *, longitude: *, altitude: *, yaw: *, vehicle_name: *name*}"
+# Compute a new path for the drones
+rosservice call /graph_loader/compute_path "node_start: 'p0' node_goal: 'p2'"
 ```
 
 ## <img src="https://user-images.githubusercontent.com/62358773/217943537-115468ea-6e9b-4997-92ac-9ef5c790c1b9.png" width="5%" height="5%"> Possible improvements
