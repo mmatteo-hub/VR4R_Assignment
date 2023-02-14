@@ -4,23 +4,23 @@
     
     <!-- This node has its own namespace -->
     <group ns="/pid_controller/$(arg drone_name)">
-        <node name="controller" pkg="drone_coverage" type="pid_drone_controller.py" output="screen">
+        <node name="controller" pkg="drone_coverage" type="drone_pid_controller.py" output="screen">
             <param name="drone_name" type="string" value="$(arg drone_name)" />
 
             <param name="kp_x" type="double" value="0.30" />
             <param name="kp_y" type="double" value="0.30" />
-            <param name="kp_z" type="double" value="0.30" />
+            <param name="kp_z" type="double" value="0.80" />
             <param name="kp_yaw" type="double" value="0.30" />
 
             <param name="kd_x" type="double" value="0.05" />
             <param name="kd_y" type="double" value="0.05" />
-            <param name="kd_z" type="double" value="0.05" />
+            <param name="kd_z" type="double" value="0.10" />
             <param name="kd_yaw" type="double" value="0.05" />
 
             <param name="goal_xyz_threshold" type="double" value="0.1" />
             <param name="goal_yaw_threshold" type="double" value="5.0" />
             
-            <param name="update_perdiod_sec" type="double" value="0.01" />
+            <param name="update_perdiod_sec" type="double" value="0.05" />
 
             <param name="max_vel_horz" type="double" value="1.0" />
             <param name="max_vel_vert" type="double" value="0.5" />

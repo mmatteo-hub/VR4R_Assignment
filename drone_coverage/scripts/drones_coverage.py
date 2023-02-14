@@ -6,20 +6,20 @@ from drone_coverage_msgs.msg import CoveragePath
 from drone_coverage_msgs.msg import RelayInstruction
 
 
-class DroneCoverage:
+class DronesCoverage:
 
     def __init__(self):
         # Creating the node for the coverage algorithm
-        rospy.init_node("drone_coverage")
+        rospy.init_node("drones_coverage")
         # Getting the list of drones available
         if not self._retrieve_drones_names():
             return
-        # Creating an action server for listening for new paths
+        # Creating a subscriber for listening for new paths
         self._path_sub = rospy.Subscriber(
-            "/drone_coverage/path", CoveragePath, 
+            "/drones_coverage/path", CoveragePath, 
             self._on_path_updated
         )
-        # The topic for communicating with the first dron in the chain
+        # The topic for communicating with the first drone in the chain
         self._chain_pub = rospy.Publisher(
             "/relay_chain/"+self._drones_names[0]+"/forward", RelayInstruction, queue_size=10
         )
@@ -28,12 +28,12 @@ class DroneCoverage:
     def _retrieve_drones_names(self):
         # The drones names are passed as an encoded array
         drones_names_str = rospy.get_param("~drones_names")
-        self._drones_names = DroneCoverage._drones_names_from_str(drones_names_str)
+        self._drones_names = DronesCoverage._drones_names_from_str(drones_names_str)
         # Check if the names are valid
         if self._drones_names == None :
-            rospy.logerr("Invalid drone names array!")
+            rospy.logerr("["+rospy.get_name()+"] Invalid drone names array!")
             return False
-        rospy.loginfo("Drones names are: "+str(self._drones_names))
+        rospy.loginfo("["+rospy.get_name()+"] Drones names are: "+str(self._drones_names))
         return True
     
 
@@ -55,7 +55,7 @@ class DroneCoverage:
         nodes_count = len(msg.path)
         drone_count = len(self._drones_names)
         if nodes_count > drone_count :
-            rospy.logerr("There are not enoguh drones ("+str(drone_count)+") to cover ("+str(nodes_count)+") nodes!")
+            rospy.logerr("["+rospy.get_name()+"] Not enoguh drones ("+str(drone_count)+") to cover "+str(nodes_count)+" nodes!")
         size = min(nodes_count, drone_count)
         # Moving the drones to the desired position
         # We want to move the last drone in the chain first
@@ -63,7 +63,7 @@ class DroneCoverage:
             drone_name = self._drones_names[i]
             pos = msg.path[i]
             self._move_drone_to_position(drone_name, pos)
-            rospy.loginfo("Moving "+drone_name+" to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
+            rospy.loginfo("["+rospy.get_name()+"] Moving "+drone_name+" to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
     
 
     def _move_drone_to_position(self, drone_name, position):
@@ -76,12 +76,7 @@ class DroneCoverage:
         self._chain_pub.publish(msg)
 
 
-def main():
-    # Creating the node for handling the coverage
-    DroneCoverage()
-    # Spinning for preventing exit
-    rospy.spin()
-
 
 if __name__ == "__main__":
-    main()
+    DronesCoverage()
+    rospy.spin()

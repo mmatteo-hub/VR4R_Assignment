@@ -9,6 +9,7 @@ from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from airsim_ros_pkgs.msg import VelCmd, GPSYaw
+from std_srvs.srv import SetBool, SetBoolResponse
 from drone_coverage_msgs.srv import SetDroneGoalPose, SetDroneGoalPoseResponse
 
 
@@ -20,9 +21,10 @@ class PidDroneController :
 
     def __init__(self) :
         # Initializing this node
-        rospy.init_node("pid_drone_controller")
+        rospy.init_node("drone_pid_controller")
         # Initializing other variables
         self._reached_goal = True
+        self._is_halting = False
         self._has_odom = False
         self._has_gps_home = False
         self._has_home = False
@@ -38,9 +40,13 @@ class PidDroneController :
         self._vel_pub = rospy.Publisher(
             "/airsim_node/"+self._drone_name+"/vel_cmd_world_frame", VelCmd, queue_size=1
         )
+        # Creating a publisher for the drone global position
+        self._global_odom_pub = rospy.Publisher(
+            "/airsim_node/"+self._drone_name+"/odom_global_ned", Odometry, queue_size=1
+        )
         # Creating a subscriber for the drone odom
-        self._odom_sub = rospy.Subscriber(
-            "/airsim_node/"+self._drone_name+"/odom_local_ned", Odometry, queue_size=50, 
+        self._local_odom_sub = rospy.Subscriber(
+            "/airsim_node/"+self._drone_name+"/odom_local_ned", Odometry, queue_size=1, 
             callback=self._on_drone_odometry
         )
         # Creating a subscriber for the gps home
@@ -52,6 +58,11 @@ class PidDroneController :
         self._gps_sub = rospy.Subscriber(
             "/airsim_node/"+self._drone_name+"/global_gps", NavSatFix, queue_size=1,
             callback=self._on_drone_gps 
+        )
+        # Creating a service for temporarely halting the drone
+        self._alt_sub = rospy.Service(
+            "/airsim_node/"+self._drone_name+"/halt", SetBool,
+            handler=self._on_halt_request_service
         )
         # Creating a service for the goal position
         self._goal_srv = rospy.Service(
@@ -146,6 +157,12 @@ class PidDroneController :
         if not self._has_odom :
             rospy.loginfo("[PID "+self._drone_name+"] First odometry received!")
             self._has_odom = True
+        # Publishing message with the current global position
+        msg.pose.pose.position.x = self._current_pose.x
+        msg.pose.pose.position.y = self._current_pose.y
+        msg.pose.pose.position.z = self._current_pose.z
+        self._global_odom_pub.publish(msg)
+
 
     
     def _on_local_goal_service(self, req):
@@ -165,6 +182,14 @@ class PidDroneController :
         return SetDroneGoalPoseResponse(True)
     
 
+    def _on_halt_request_service(self, req):
+        # Setting a zero velocity on the drone
+        self._vel_pub.publish(VelCmd())
+        # Setting the halting mode as requested
+        self._is_halting = req.data
+        return SetBoolResponse(True, "")
+    
+
     def _check_goal_reached(self):
         # If the goal has already been reached, do nothing
         if self._reached_goal :
@@ -177,6 +202,7 @@ class PidDroneController :
         # Computing the error in the yaw
         diff_yaw = angular_dist(self._current_pose.yaw, self._goal_pose.yaw)
         # Checking the thresholds
+        rospy.loginfo("[PID "+self._drone_name+"] distance is "+str(diff_xyz))
         if diff_xyz < self._goal_xyx_threshold and diff_yaw < self._goal_xyx_threshold :
             self._reached_goal = True
             rospy.loginfo("[PID "+self._drone_name+"] Goal pose has been reached!")
@@ -189,6 +215,9 @@ class PidDroneController :
             return
         if not self._has_odom :
             rospy.logwarn_once("[PID "+self._drone_name+"] Waiting for first odometry!")
+            return
+        # Check if the drone is currently halting
+        if self._is_halting :
             return
         # Check if the current goal has already been reached
         self._check_goal_reached()
@@ -261,10 +290,6 @@ def angular_dist(from_rads, to_rads):
     return wrap_to_pi(to_rads - from_rads)
 
 
-def main():
+if __name__ == "__main__":
     PidDroneController()
     rospy.spin()
-
-
-if __name__ == "__main__":
-    main()

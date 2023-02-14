@@ -2,8 +2,8 @@
     <!-- This launch file requires the drones names as argument -->
     <arg name="drones_names" />
     
-    <node name="drone_coverage" pkg="drone_coverage" type="drone_coverage.py" output="screen">
-        <remap from="/drone_coverage/path" to="/graph_loader/path"/>
+    <node name="drones_coverage" pkg="drone_coverage" type="drones_coverage.py" output="screen">
+        <remap from="/drones_coverage/path" to="/graph_loader/path"/>
         <param name="drones_names" type="string" value="$(arg drones_names)" />
     </node>
 </launch>

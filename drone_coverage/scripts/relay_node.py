@@ -4,6 +4,7 @@ import rospy
 
 from drone_coverage_msgs.msg import RelayInstruction
 from drone_coverage_msgs.srv import SetDroneGoalPose
+from std_srvs.srv import SetBool
 
 class RelayNode:
 
@@ -66,8 +67,10 @@ class RelayNode:
             # This drone has executed the instruction
             if msg.instruction == 0:
                 self._receive_message_instruction(msg.data)
-            if msg.instruction == 1:
+            elif msg.instruction == 1:
                 self._move_to_position_instruction(msg.data)
+            elif msg.instruction == 2:
+                self._halt_instruction(msg.data)
             return True
         # This drone does not need to execute the instruction
         return False
@@ -84,13 +87,15 @@ class RelayNode:
         move_srv = rospy.ServiceProxy('/airsim_node/'+self._identifier+'/local_goal', SetDroneGoalPose)
         move_srv(pos[0], pos[1], pos[2], 0)
         rospy.loginfo("["+rospy.get_name()+"] Moving to (x:"+str(pos[0])+" y:"+str(pos[1])+ " z:"+str(pos[2])+")")
+    
 
+    def _halt_instruction(self, data):
+        halt_srv = rospy.ServiceProxy('/airsim_node/'+self._identifier+'/halt', SetBool)
+        halt_srv(data == "true")
+        rospy.loginfo("["+rospy.get_name()+"] Halting")
 
-
-def main():
-    RelayNode()
-    rospy.spin()
 
 
 if __name__ == "__main__":
-    main()
+    RelayNode()
+    rospy.spin()

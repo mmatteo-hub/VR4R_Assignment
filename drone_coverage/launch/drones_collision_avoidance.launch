@@ -1,0 +1,12 @@
+<launch>
+    <!-- This launch file requires the drones names as argument -->
+    <arg name="drones_names" />
+    <arg name="halting_threshold" default="3.0"/>
+    <arg name="restart_threshold" default="3.1"/>
+    
+    <node name="drones_collision_avoidance" pkg="drone_coverage" type="drones_collision_avoidance.py" output="screen">
+        <param name="drones_names" type="string" value="$(arg drones_names)" />
+        <param name="halting_threshold" type="double" value="$(arg halting_threshold)" />
+        <param name="restart_threshold" type="double" value="$(arg restart_threshold)" />
+    </node>
+</launch>

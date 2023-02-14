@@ -101,12 +101,7 @@ class GraphLoader:
         return math.sqrt(xd*xd + yd*yd + zd*zd)
 
 
-def main() :
-    # Creating a new graph loader
-    GraphLoader()
-    # Spinning for preventing exiting
-    rospy.spin()
-
 
 if __name__ == "__main__":
-    main()
+    GraphLoader()
+    rospy.spin()
