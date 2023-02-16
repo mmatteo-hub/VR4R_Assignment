@@ -2,6 +2,8 @@
 
 import rospy
 
+from relay_chain_helper import RelayChainHelper
+
 from drone_coverage_msgs.msg import CoveragePath
 from drone_coverage_msgs.msg import RelayInstruction
 
@@ -19,6 +21,8 @@ class DronesCoverage:
             "/drones_coverage/path", CoveragePath, 
             self._on_path_updated
         )
+        # Creating helper for the relay chain the data
+        self._chain_helper = RelayChainHelper("base_station")
         # The topic for communicating with the first drone in the chain
         self._chain_pub = rospy.Publisher(
             "/relay_chain/"+self._drones_names[0]+"/forward", RelayInstruction, queue_size=10
@@ -55,25 +59,14 @@ class DronesCoverage:
         nodes_count = len(msg.path)
         drone_count = len(self._drones_names)
         if nodes_count > drone_count :
-            rospy.logerr("["+rospy.get_name()+"] Not enoguh drones ("+str(drone_count)+") to cover "+str(nodes_count)+" nodes!")
+            rospy.logerr("["+rospy.get_name()+"] Not enough drones ("+str(drone_count)+") to cover "+str(nodes_count)+" nodes!")
         size = min(nodes_count, drone_count)
         # Moving the drones to the desired position
         # We want to move the last drone in the chain first
         for i in reversed(range(size)) :
             drone_name = self._drones_names[i]
-            pos = msg.path[i]
-            self._move_drone_to_position(drone_name, pos)
+            self._chain_helper.send_move_instruction(self._chain_pub, drone_name, msg.path[i])
             rospy.loginfo("["+rospy.get_name()+"] Moving "+drone_name+" to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
-    
-
-    def _move_drone_to_position(self, drone_name, position):
-        # Creating the instruction for moving the drone
-        msg = RelayInstruction()
-        msg.identifier = drone_name
-        msg.instruction = 1
-        msg.data = str(position.x)+","+str(position.y)+","+str(position.z)
-        # Setting the requested position
-        self._chain_pub.publish(msg)
 
 
 

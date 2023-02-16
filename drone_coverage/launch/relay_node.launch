@@ -1,8 +1,8 @@
 <launch>
-    <!-- This launch file requires the two topics names -->
     <arg name="prev_name" default=""/>
     <arg name="self_name" />
     <arg name="next_name" default=""/>
+    <arg name="base_name" default="base_station"/>
 
     <group ns="relay_node">
         <node name="$(arg self_name)" pkg="drone_coverage" type="relay_node.py" output="screen">
@@ -11,10 +11,14 @@
             <remap from="/relay_chain/self/backward" to="/relay_chain/$(arg self_name)/backward"/>
             <remap from="/relay_chain/next/forward" to="/relay_chain/$(arg next_name)/forward"/>
 
-            <param name="max_node_distance" type="double" value="20.0" />
+            <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/odom_global_ned"/>
+            <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/local_goal"/>
+            <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/halt"/>
+
             <param name="prev_name" type="string" value="$(arg prev_name)"/>
             <param name="self_name" type="string" value="$(arg self_name)"/>
             <param name="next_name" type="string" value="$(arg next_name)"/>
+            <param name="base_name" type="string" value="$(arg base_name)" />
         </node>
     </group>
 </launch>

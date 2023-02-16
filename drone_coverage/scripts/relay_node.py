@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import rospy
+from relay_chain_helper import RelayChainHelper
 
 from drone_coverage_msgs.msg import RelayInstruction
 from drone_coverage_msgs.srv import SetDroneGoalPose
 from std_srvs.srv import SetBool
+from nav_msgs.msg import Odometry
 
 class RelayNode:
 
@@ -12,87 +14,78 @@ class RelayNode:
         # Creating a ros node which represents a node in the relay chain
         rospy.init_node("drone_coverage")
         # Read parameters
-        self._identifier = rospy.get_param("~self_name")
-        self._has_prev_node = rospy.get_param("~prev_name") != ""
-        self._has_next_node = rospy.get_param("~next_name") != ""
-        self._max_node_distance = rospy.get_param("~max_node_distance")
-        # The subscriber for receiving the data in the forward direction
-        self._forward_data_sub = rospy.Subscriber(
-            "/relay_chain/self/forward", RelayInstruction, 
-            self._on_relay_chain_forward_data
+        self._base_identifier = rospy.get_param("~base_name")
+        self._self_identifier = rospy.get_param("~self_name")
+        self._has_backward_node = rospy.get_param("~prev_name") != ""
+        self._has_forward_node = rospy.get_param("~next_name") != ""
+        # Creating a Publisher for the position of the drone
+        self._odom_sub = rospy.Subscriber(
+            "/airsim_node/self/odom_global_ned", Odometry, 
+            self._on_pose_callback
         )
-        # The subscriber for receiving the data in the backward direction
-        self._backward_data_sub = rospy.Subscriber(
-            "/relay_chain/self/backward", RelayInstruction,
-            self._on_relay_chain_backward_data
+        # Creating a ServiceProxy for making the drone move
+        self._move_srv = rospy.ServiceProxy(
+            '/airsim_node/self/local_goal', SetDroneGoalPose
         )
-        # The publisher for sending the data in the forward direction
+        # Creating a ServiceProxy for halting the drone
+        self._halt_srv = rospy.ServiceProxy(
+            '/airsim_node/self/halt', SetBool
+        )
+        # Finally, initializing topics related to the relay chain
+        self._initialize_relay_chain()
+    
+
+    def _initialize_relay_chain():
+        # Creating an helper for handling the relay node
+        self._helper = RelayChainHelper(self._self_identifier)
+        self._helper.move_instruction_callback = self._on_move_instruction
+        self._helper.halt_instruction_callback = self._on_halt_instruction
+        # Initializing the Subscribers and Publishers for the relay chain
+        self._forward_data_sub = None
         self._forward_data_pub = None
-        if self._has_next_node :
+        self._backward_data_sub = None
+        self._backward_data_pub = None
+        # The Publisher for sending the data in the forward direction
+        if self._has_forward_node :
             self._forward_data_pub = rospy.Publisher(
                 "/relay_chain/next/forward", RelayInstruction, queue_size=10
             )
-        # The publisher for sending the data in the backward direction
-        self._backward_data_pub = None
-        if self._has_prev_node :
+        # The Subscriber for receiving the data in the forward direction
+        if self._has_forward_node :
+            self._forward_data_sub = rospy.Subscriber(
+                "/relay_chain/self/forward", RelayInstruction,
+                lambda msg : self._helper._on_chain_forward_data(self._forward_data_pub, msg)
+            )
+        # The Publisher for sending the data in the backward direction
+        if self._has_backward_node :
             self._backward_data_pub = rospy.Publisher(
                 "/relay_chain/prev/backward", RelayInstruction, queue_size=10
             )
-
-    
-    def _on_relay_chain_forward_data(self, msg):
-        # Check if the instruction is to be executed
-        if self._check_and_execute_message(msg) :
-            return
-        # Logging the message
-        rospy.loginfo("["+rospy.get_name()+"] Received instruction to send forward: "+msg.data)
-        # Transmiting the data to the other node
-        if self._forward_data_pub != None :
-            self._forward_data_pub.publish(msg)
+        # The Subscriber for receiving the data in the backward direction
+        if self._has_backward_node :
+            self._backward_data_sub = rospy.Subscriber(
+                "/relay_chain/self/backward", RelayInstruction,
+                lambda msg : self._helper._on_chain_backward_data(self._backward_data_pub, msg)
+            )
 
 
-    def _on_relay_chain_backward_data(self, msg):
-        # Check if the instruction is to be executed
-        if self._check_and_execute_message(msg) :
-            return
-        # Logging the message
-        rospy.loginfo("["+rospy.get_name()+"] Received instruction to send backward: "+msg.data)
-        # Transmiting the data to the other node
-        if self._backward_data_pub != None :
-            self._backward_data_pub.publish(msg)
+    def _on_pose_callback(self, msg):
+        # Getting only the position
+        pos = msg.pose.pose.position
+        # Sending the position to the base station
+        self._helper.send_move_instruction(self._backward_data_pub, self._base_identifier, pos)
     
 
-    def _check_and_execute_message(self, msg):
-        if msg.identifier == self._identifier:
-            # This drone has executed the instruction
-            if msg.instruction == 0:
-                self._receive_message_instruction(msg.data)
-            elif msg.instruction == 1:
-                self._move_to_position_instruction(msg.data)
-            elif msg.instruction == 2:
-                self._halt_instruction(msg.data)
-            return True
-        # This drone does not need to execute the instruction
-        return False
-
-
-    def _receive_message_instruction(self, data):
-        rospy.loginfo("["+rospy.get_name()+"] Received message: " +data)
-
-
-    def _move_to_position_instruction(self, data):
-        # Parsing the positon from the data string
-        pos = list(map(float, data.split(",")))
+    def _on_move_instruction(self, pos):
         # Setting the requested position
-        move_srv = rospy.ServiceProxy('/airsim_node/'+self._identifier+'/local_goal', SetDroneGoalPose)
-        move_srv(pos[0], pos[1], pos[2], 0)
+        self._move_srv(pos[0], pos[1], pos[2], 0)
         rospy.loginfo("["+rospy.get_name()+"] Moving to (x:"+str(pos[0])+" y:"+str(pos[1])+ " z:"+str(pos[2])+")")
     
 
-    def _halt_instruction(self, data):
-        halt_srv = rospy.ServiceProxy('/airsim_node/'+self._identifier+'/halt', SetBool)
-        halt_srv(data == "true")
-        rospy.loginfo("["+rospy.get_name()+"] Halting")
+    def _on_halt_instruction(self, is_halting):
+        # Setting the drone has halting or restarting
+        self._halt_srv(is_halting)
+        rospy.loginfo("["+rospy.get_name()+"] "+("Halting" if is_halting else "Restating")+"!")
 
 
 

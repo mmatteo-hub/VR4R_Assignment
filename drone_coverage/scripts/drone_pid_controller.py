@@ -163,7 +163,6 @@ class PidDroneController :
         msg.pose.pose.position.z = self._current_pose.z
         self._global_odom_pub.publish(msg)
 
-
     
     def _on_local_goal_service(self, req):
         if not self._has_odom :

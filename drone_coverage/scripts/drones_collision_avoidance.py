@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
 
+from relay_chain_helper import RelayChainHelper
+
 from nav_msgs.msg import Odometry
 from drone_coverage_msgs.msg import RelayInstruction
 
@@ -13,22 +15,20 @@ class DronesCollisionAvoidance:
         if not self._retrieve_drones_names():
             return
         # Initializing parameters and variables
+        drones_count = len(self._drones_names)
         self._halting_th2 = pow(rospy.get_param("~halting_threshold"), 2.0)
         self._restart_th2 = pow(rospy.get_param("~restart_threshold"), 2.0)
-        drones_count = len(self._drones_names)
-        self._drones_odom_subs = [None]*drones_count
-        self._drones_halt_srvs = [None]*drones_count
         self._drones_positions = [None]*drones_count
         self._drones_currently_halting = []
-        # Creating interfaces for each drone
-        for index in range(len(self._drones_names)):
-            drone_name = self._drones_names[index]
-            # Creating a subscriber for each drone odometry
-            self._drones_odom_subs[index] = rospy.Subscriber(
-                "/airsim_node/"+drone_name+"/odom_global_ned", Odometry, 
-                lambda msg, index=index : self._on_drone_odometry(msg, index)
-            )
-        # The topic for communicating with the first drone in the chain
+        # Creating helper for receiving the data
+        self._chain_helper = RelayChainHelper("base_station")
+        self._chain_helper.pose_instruction_callback = self._on_pose_instruction
+        # A Subscriber for receiving the data from the chain
+        self._chain_sub = rospy.Subscriber(
+            "/relay_chain/base_station/backward", RelayInstruction,
+            lambda msg: self._chain_helper._on_chain_backward_data(None, msg)
+        )
+        # A Publisher for sending the data to the chain
         self._chain_pub = rospy.Publisher(
             "/relay_chain/"+self._drones_names[0]+"/forward", RelayInstruction, queue_size=10
         )
@@ -61,26 +61,30 @@ class DronesCollisionAvoidance:
         return list(map(lambda name : name.strip(), string.split(",")))
     
 
-    def _on_drone_odometry(self, msg, index):
+    def _on_pose_instruction(self, drone_name, position):
+        # Getting the index for the drone name
+        index = self._drones_names.index(drone_name)
         # Storing the updated position of the robot
-        self._drones_positions[index] = msg.pose.pose.position
+        self._drones_positions[index] = position
     
 
     def _check_drones_collisions(self, event):
         # Making the drones start halting if needed
         new_halting_drones = []
         for drone_index in self._get_not_halting_drones_indexes():
-            # Alting the drone if needes to be
+            # Halting the drone if needes to be
             if self._is_halting_needed(drone_index, self._halting_th2):
-                self._drones_halt_srvs[drone_index](True)
+                drone_name = self._drones_names[drone_index]
+                self._chain_helper.send_halt_instruction(self._chain_pub, drone_name, True)
                 new_halting_drones.append(drone_index)
                 rospy.loginfo("["+rospy.get_name()+"] Halting "+self._drones_names[drone_index]+"!")
         # Making the drones stop halting if needed
         for i in reversed(range(len(self._drones_currently_halting))):
             drone_index = self._drones_currently_halting[i]
-            # Stop alting the drone if he does not need to
+            # Restarting the drone if he does not need to be halted
             if not self._is_halting_needed(drone_index, self._restart_th2):
-                self._drones_halt_srvs[drone_index](False)
+                drone_name = self._drones_names[drone_index]
+                self._chain_helper.send_halt_instruction(self._chain_pub, drone_name, False)
                 self._drones_currently_halting.pop(i)
                 rospy.loginfo("["+rospy.get_name()+"] Restarting "+self._drones_names[drone_index]+"!")
         # Adding all the drones that have been alted
@@ -106,19 +110,16 @@ class DronesCollisionAvoidance:
             other_pose = self._drones_positions[other_index]
             if other_pose == None :
                continue
-            distance2 = self._distance_sqrd(drone_pose, other_pose)
-            print(distance2)
-            print(threshold2)
-            if distance2 < threshold2 :
+            if distance2(drone_pose, other_pose) < threshold2 :
                 return True
         return False
 
 
-    def _distance_sqrd(self, point0, point1):
-        dx = point0.x-point1.x
-        dy = point0.y-point1.y
-        dz = point0.z-point1.z
-        return dx*dx + dy*dy + dz*dz
+def distance2(point0, point1):
+    dx = point0.x-point1.x
+    dy = point0.y-point1.y
+    dz = point0.z-point1.z
+    return dx*dx + dy*dy + dz*dz
 
 
 
