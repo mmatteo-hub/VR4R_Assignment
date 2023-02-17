@@ -34,11 +34,11 @@ rosservice call /graph_loader/compute_path "node_start: 'p0' node_goal: 'p2'"
 The solution could be improved by transmitting information through a relay of drones controlled in Virtual Reality using a First Person View headset, providing an immersive and intuitive experience for the operator, leading to quicker and more effective information transmission. The VR-FPV interface should also allow individual control of each drone to monitor the mountain in real-time, enabling quick identification and response to potential hazards.
 
 ## <img src="https://user-images.githubusercontent.com/62358773/217944707-e4972167-1fa2-423b-a350-5a18715edb45.png" width="5%" height="5%"> Students and Contacts
-[Davide Leo Parisi](https://github.com/dpareasy) <a href="mailto:s4329668@studenti.unige.it" >
-<img align="center" src="https://user-images.githubusercontent.com/81308076/155858753-ef1238f1-5887-4e4d-9ac2-2b0bb82836e2.png" alt="dpareasy" height="20" width="20" /> </a> <br>
 [Matteo Maragliano](https://github.com/mmatteo-hub) <a href="mailto:s4636216@studenti.unige.it" >
 <img align="center" src="https://user-images.githubusercontent.com/81308076/155858753-ef1238f1-5887-4e4d-9ac2-2b0bb82836e2.png" alt="IlMusu" height="20" width="20" /> </a> <br>
 [Mattia Musumeci](https://github.com/IlMusu) <a href="mailto:s4670261@studenti.unige.it" >
 <img align="center" src="https://user-images.githubusercontent.com/81308076/155858753-ef1238f1-5887-4e4d-9ac2-2b0bb82836e2.png" alt="mmatteo-hub" height="20" width="20" /> </a> <br>
+[Davide Leo Parisi](https://github.com/dpareasy) <a href="mailto:s4329668@studenti.unige.it" >
+<img align="center" src="https://user-images.githubusercontent.com/81308076/155858753-ef1238f1-5887-4e4d-9ac2-2b0bb82836e2.png" alt="dpareasy" height="20" width="20" /> </a> <br>
 [Sara Sgambato](https://github.com/sarasgambato) <a href="mailto:s4648592@studenti.unige.it" >
 <img align="center" src="https://user-images.githubusercontent.com/81308076/155858753-ef1238f1-5887-4e4d-9ac2-2b0bb82836e2.png" alt="sarasgambato" height="20" width="20" /> </a>
