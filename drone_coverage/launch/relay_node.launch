@@ -12,8 +12,8 @@
             <remap from="/relay_chain/next/forward" to="/relay_chain/$(arg next_name)/forward"/>
 
             <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/odom_global_ned"/>
-            <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/local_goal"/>
-            <remap from="/airsim_node/self/odom_global_ned" to="/airsim_node/$(arg self_name)/halt"/>
+            <remap from="/airsim_node/self/local_goal" to="/airsim_node/$(arg self_name)/local_goal"/>
+            <remap from="/airsim_node/self/halt" to="/airsim_node/$(arg self_name)/halt"/>
 
             <param name="prev_name" type="string" value="$(arg prev_name)"/>
             <param name="self_name" type="string" value="$(arg self_name)"/>

@@ -27,7 +27,7 @@ class RelayChainHelper:
         # Logging the message
         rospy.loginfo("["+rospy.get_name()+"] Received instruction to send forward: "+msg.data)
         # Transmiting the data to the other node
-        self.forward_pub.publish(msg)
+        forward_pub.publish(msg)
 
 
     def _on_chain_backward_data(self, backward_pub, msg):
@@ -37,7 +37,7 @@ class RelayChainHelper:
         # Logging the message
         rospy.loginfo("["+rospy.get_name()+"] Received instruction to send backward: "+msg.data)
         # Transmiting the data to the other node
-        self.backward_pub.publish(msg)
+        backward_pub.publish(msg)
 
 
     def _check_and_handle_message(self, msg):
@@ -93,7 +93,7 @@ class RelayChainHelper:
         self.on_pose_callback(identifier, position)
 
     
-    def send_goal_data(self, is_reached):
+    def send_goal_data(self, chain_pub, node_identifier, is_reached):
         # Creating the instruction mesage
         msg = RelayInstruction()
         msg.identifier = node_identifier

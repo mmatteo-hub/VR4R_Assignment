@@ -12,20 +12,22 @@ from geometry_msgs.msg import Point
 from drone_coverage_msgs.srv import LoadCoverageGraph, LoadCoverageGraphResponse
 from drone_coverage_msgs.srv import ComputeCoveragePath, ComputeCoveragePathResponse
 from drone_coverage_msgs.msg import CoveragePath
-from drone_coverage_msgs.msg import UpdateCoverageWeights
+from drone_coverage_msgs.msg import UpdateGraphWeights
 
 
 class CoverageData:
 
     @staticmethod
     def fromJson(name, data):
+        coverage_data = CoverageData()
         # Getting the data from the json data
-        pos = data[name]["position"]
-        self.name = name
-        self.pos = Point(pos[0], pos[1], pos[2])
-        self.difficulty = data[name]["difficulty"]
+        pos = data["position"]
+        coverage_data.name = name
+        coverage_data.pos = Point(pos[0], pos[1], pos[2])
+        coverage_data.difficulty = data["difficulty"]
         # The cost that might be updated dynamically
-        self.dynamic_cost = 0
+        coverage_data.dynamic_cost = 0
+        return coverage_data
 
     
     @staticmethod
@@ -68,7 +70,7 @@ class GraphLoader:
         )
         # A Subscriber for updating the dynamic weights
         self._weights_update_sub = rospy.Subscriber(
-            "graph_loader/update_weights", UpdateCoverageWeights,
+            "graph_loader/update_weights", UpdateGraphWeights,
             callback=self._on_update_weights_message
         )
         # A Publisher for publishing a new coverage path
@@ -116,7 +118,7 @@ class GraphLoader:
             # Updating the dynamic weight for the requested node
             node.value.dynamic_cost += msg.value
             # Updating the connection weights
-            self._graph.update_connected_weights(node, self._compute_weight(node1))
+            self._graph.update_connected_weights(node, self._compute_weight(node))
 
 
     def _on_compute_path_service(self, req):
@@ -132,13 +134,14 @@ class GraphLoader:
         # Publishing the path on the topic
         rospy.loginfo("Publishing new path...")
         msg = CoveragePath()
-        msg.path = list(map(lambda node : node.value, self._last_path))
+        msg.path = list(map(lambda node : node.value.pos, self._last_path))
+        msg.cost = self._last_cost
         self._path_pub.publish(msg)
         return ComputeCoveragePathResponse(True)
     
 
-    def _compute_weight(node0, node1):
-        return CoverageData.computeDirectionalCost(node0.data, node1.data, self._wind)
+    def _compute_weight(self, node0, node1):
+        return CoverageData.computeDirectionalCost(node0.value, node1.value, self._wind)
 
 
 def dot_product(point0, point1):

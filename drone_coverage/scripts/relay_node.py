@@ -41,38 +41,29 @@ class RelayNode:
         self._initialize_relay_chain()
     
 
-    def _initialize_relay_chain():
+    def _initialize_relay_chain(self):
         # Creating an helper for handling the relay node
         self._helper = RelayChainHelper(self._self_identifier)
         self._helper.on_move_instruction = self._on_move_instruction
         self._helper.on_halt_instruction = self._on_halt_instruction
-        # Initializing the Subscribers and Publishers for the relay chain
-        self._forward_sub = None
-        self._forward_pub = None
-        self._backward_sub = None
-        self._backward_pub = None
         # The Publisher for sending the data in the forward direction
-        if self._has_forward_node :
-            self._forward_pub = rospy.Publisher(
-                "/relay_chain/next/forward", RelayInstruction, queue_size=10
-            )
+        self._forward_pub = rospy.Publisher(
+            "/relay_chain/next/forward", RelayInstruction, queue_size=10
+        )
         # The Subscriber for receiving the data in the forward direction
-        if self._has_forward_node :
-            self._forward_sub = rospy.Subscriber(
-                "/relay_chain/self/forward", RelayInstruction,
-                lambda msg : self._helper._on_chain_forward_data(self._forward_data_pub, msg)
-            )
+        self._forward_sub = rospy.Subscriber(
+            "/relay_chain/self/forward", RelayInstruction,
+            lambda msg : self._helper._on_chain_forward_data(self._forward_pub, msg)
+        )
         # The Publisher for sending the data in the backward direction
-        if self._has_backward_node :
-            self._backward_pub = rospy.Publisher(
-                "/relay_chain/prev/backward", RelayInstruction, queue_size=10
-            )
+        self._backward_pub = rospy.Publisher(
+            "/relay_chain/prev/backward", RelayInstruction, queue_size=10
+        )
         # The Subscriber for receiving the data in the backward direction
-        if self._has_backward_node :
-            self._backward_sub = rospy.Subscriber(
-                "/relay_chain/self/backward", RelayInstruction,
-                lambda msg : self._helper._on_chain_backward_data(self._backward_data_pub, msg)
-            )
+        self._backward_sub = rospy.Subscriber(
+            "/relay_chain/self/backward", RelayInstruction,
+            lambda msg : self._helper._on_chain_backward_data(self._backward_pub, msg)
+        )
 
 
     def _on_pose_callback(self, msg):

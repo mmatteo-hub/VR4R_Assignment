@@ -65,7 +65,8 @@ class DronesCoverage:
         # We want to move the last drone in the chain first
         for i in reversed(range(size)) :
             drone_name = self._drones_names[i]
-            self._chain_helper.send_move_instruction(self._chain_pub, drone_name, msg.path[i])
+            pos = msg.path[i]
+            self._chain_helper.send_move_instruction(self._chain_pub, drone_name, pos)
             rospy.loginfo("["+rospy.get_name()+"] Moving "+drone_name+" to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
 
 

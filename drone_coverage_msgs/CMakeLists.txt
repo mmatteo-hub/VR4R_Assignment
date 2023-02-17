@@ -53,7 +53,7 @@ add_message_files(
   FILES
   CoveragePath.msg
   RelayInstruction.msg
-  UpdaterGraphWeights.msg
+  UpdateGraphWeights.msg
 )
 
 ## Generate services in the 'srv' folder
