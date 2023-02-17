@@ -76,8 +76,8 @@ class RelayNode:
     
 
     def _on_move_instruction(self, pos):
-        self._move_srv(pos[0], pos[1], pos[2], 0)
-        rospy.loginfo("["+rospy.get_name()+"] Moving to (x:"+str(pos[0])+" y:"+str(pos[1])+ " z:"+str(pos[2])+")")
+        self._move_srv(pos.x, pos.y, pos.z, 0)
+        rospy.loginfo("["+rospy.get_name()+"] Moving to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
     
 
     def _on_halt_instruction(self, is_halting):

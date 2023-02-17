@@ -8,11 +8,10 @@ from graph import DirectionalWeightedGraph
 from a_star import AStar
 
 from geometry_msgs.msg import Point
-
-from drone_coverage_msgs.srv import LoadCoverageGraph, LoadCoverageGraphResponse
-from drone_coverage_msgs.srv import ComputeCoveragePath, ComputeCoveragePathResponse
 from drone_coverage_msgs.msg import CoveragePath
 from drone_coverage_msgs.msg import UpdateGraphWeights
+from drone_coverage_msgs.srv import LoadCoverageGraph, LoadCoverageGraphResponse
+from drone_coverage_msgs.srv import ComputeCoveragePath, ComputeCoveragePathResponse
 
 
 class CoverageData:
@@ -25,6 +24,7 @@ class CoverageData:
         coverage_data.name = name
         coverage_data.pos = Point(pos[0], pos[1], pos[2])
         coverage_data.difficulty = data["difficulty"]
+        coverage_data.distance = -1
         # The cost that might be updated dynamically
         coverage_data.dynamic_cost = 0
         return coverage_data
@@ -46,7 +46,7 @@ class GraphLoader:
 
     def __init__(self) :
         # Initializing the ros node for handling graphs and nodes
-        rospy.init_node("graph_loader")
+        rospy.init_node("graph_knowledge")
         # Initializing the data
         self._graph = DirectionalWeightedGraph()
         self._nodes = {}
@@ -55,27 +55,27 @@ class GraphLoader:
         self._wind = Point(0, 0, 0)
         # A Service for loading a new graph
         self._load_graph_srv = rospy.Service(
-            "graph_loader/load_graph", LoadCoverageGraph, 
+            "graph_knowledge/load_graph", LoadCoverageGraph, 
             handler=self._on_load_graph_service
         )
         # A Service for computing a new path
         self._compute_path_srv = rospy.Service(
-            "graph_loader/compute_path", ComputeCoveragePath, 
+            "graph_knowledge/compute_path", ComputeCoveragePath, 
             handler=self._on_compute_path_service
         )
         # A Subscriber for updating the wind
         self._wind_sub = rospy.Subscriber(
-            "graph_loader/wind", Point,
+            "graph_knowledge/wind", Point,
             callback=self._on_update_wind_message
         )
         # A Subscriber for updating the dynamic weights
         self._weights_update_sub = rospy.Subscriber(
-            "graph_loader/update_weights", UpdateGraphWeights,
+            "graph_knowledge/update_weights", UpdateGraphWeights,
             callback=self._on_update_weights_message
         )
         # A Publisher for publishing a new coverage path
         self._path_pub = rospy.Publisher(
-            "graph_loader/path", CoveragePath, queue_size=1
+            "graph_knowledge/path", CoveragePath, queue_size=1
         )
         rospy.loginfo("Starting to wait for graph...")
 
@@ -99,6 +99,8 @@ class GraphLoader:
                 to_node0_weight = self._compute_weight(node1, node0)
                 to_node1_weight = self._compute_weight(node0, node1)
                 self._graph.connect(node0, node1, to_node0_weight, to_node1_weight)
+            # Computing the nodes distances
+            self._set_nodes_distances(self._nodes[data["center"]])
         # Logging info
         rospy.loginfo("Received and loaded new graph correctly!")
         return LoadCoverageGraphResponse(True)
@@ -142,6 +144,40 @@ class GraphLoader:
 
     def _compute_weight(self, node0, node1):
         return CoverageData.computeDirectionalCost(node0.value, node1.value, self._wind)
+
+
+    def _set_nodes_distances(self, center_node):
+        # Initializing the center node distance
+        current_distance = 0
+        center_node.value.distance = current_distance
+        # Initializing the frontier of nodes to explore
+        frontier = [center_node]
+
+        while(len(frontier) > 0):
+            # The new frontier will have a distance +1
+            # with respect to the previous one
+            current_distance += 1
+            new_frontier = []
+            # Iterating along the whole frontier
+            while(len(frontier) > 0):
+                node = frontier.pop(0)
+                for other_node in node.arcs.keys():
+                    # Check if the node has already been initialized
+                    if other_node.value.distance != -1:
+                        continue
+                    # Initializing the node distance and storing frontier
+                    other_node.value.distance = current_distance
+                    print(other_node.value.name + " " + str(current_distance))
+                    new_frontier.append(other_node)
+            # Appending the new found frontier
+            frontier = new_frontier
+
+                        
+                
+        
+
+
+
 
 
 def dot_product(point0, point1):

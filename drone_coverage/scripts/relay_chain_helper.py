@@ -2,6 +2,7 @@
 
 import rospy
 
+from geometry_msgs.msg import Point
 from drone_coverage_msgs.msg import RelayInstruction
 
 MOVE_INSTRUCTION_ID = 0
@@ -68,9 +69,9 @@ class RelayChainHelper:
 
     def _on_move_instruction(self, data):
         # Parsing the position from the message
-        position = list(map(float, data.split(",")))
+        pos = list(map(float, data.split(",")))
         # Calling the callback
-        self.on_move_instruction(position)
+        self.on_move_instruction(Point(pos[0], pos[1], pos[2]))
 
     
     def send_pose_data(self, chain_pub, node_identifier, position):
@@ -86,11 +87,11 @@ class RelayChainHelper:
     
     def _on_pose_callback(self, data):
         # Parsing the position from the message
-        data_array = list(map(float, data.split(",")))
-        identifier = data_array.pop(i)
-        position = data_array
+        data_array = data.split(",")
+        identifier = data_array.pop(0)
+        pos = list(map(float, data_array))
         # Calling the callback
-        self.on_pose_callback(identifier, position)
+        self.on_pose_callback(identifier, Point(pos[0], pos[1], pos[2]))
 
     
     def send_goal_data(self, chain_pub, node_identifier, is_reached):
@@ -105,8 +106,8 @@ class RelayChainHelper:
 
 
     def _on_goal_callback(self, data):
-        data_array = list(map(float, data.split(",")))
-        identifier = data_array.pop(i)
+        data_array = data.split(",")
+        identifier = data_array.pop(0)
         is_reached = bool(data_array[0])
         # Calling the callback
         self.on_goal_callback(identifier, is_reached)

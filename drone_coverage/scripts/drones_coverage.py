@@ -18,7 +18,7 @@ class DronesCoverage:
             return
         # Creating a subscriber for listening for new paths
         self._path_sub = rospy.Subscriber(
-            "/drones_coverage/path", CoveragePath, 
+            "/graph_knowledge/path", CoveragePath, 
             self._on_path_updated
         )
         # Creating helper for the relay chain the data

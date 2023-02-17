@@ -30,17 +30,18 @@ class DirectionalWeightedGraph :
         return node0.arcs[node1]
     
 
-    def update_weights(updater):
+    def update_weights(self, updater):
         # Updating all the weights of the graph with the given updater
-        for from_node in self._graph.nodes :
+        for from_node in self.nodes :
             for to_node in from_node.arcs.keys() :
                 from_node.arcs[to_node] = updater(from_node, to_node)
     
 
+    @staticmethod
     def update_connected_weights(to_node, updater):
         # Updating only the weights of the connections to the
         # specified node
-        for from_node in node.arcs.keys() :
+        for from_node in to_node.arcs.keys() :
             from_node.arcs[to_node] = updater(from_node, to_node)
 
 

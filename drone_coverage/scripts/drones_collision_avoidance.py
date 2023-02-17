@@ -3,7 +3,6 @@ import rospy
 
 from relay_chain_helper import RelayChainHelper
 
-from nav_msgs.msg import Odometry
 from drone_coverage_msgs.msg import RelayInstruction
 
 class DronesCollisionAvoidance:

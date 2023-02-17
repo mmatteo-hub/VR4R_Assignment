@@ -58,7 +58,7 @@ drones_names_arr =",".join(drones_names)
 
 terminal = GnomeTerminalHelper()
 # Spawning the the graph loader node
-terminal.add_tab("","rosrun graph_loader graph_loader.py")
+terminal.add_tab("","rosrun graph_loader graph_knowledge.py")
 # Spawning the drone coverage node
 args = "drones_names:=["+drones_names_arr+"]"
 terminal.add_tab("","roslaunch drone_coverage drones_coverage.launch "+args)
