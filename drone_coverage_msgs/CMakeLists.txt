@@ -53,14 +53,15 @@ add_message_files(
   FILES
   CoveragePath.msg
   RelayInstruction.msg
+  UpdaterGraphWeights.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  ComputeCoveragePath.srv
-  LoadCoverageGraph.srv
   SetDroneGoalPose.srv
+  LoadCoverageGraph.srv
+  ComputeCoveragePath.srv
 )
 
 ## Generate actions in the 'action' folder

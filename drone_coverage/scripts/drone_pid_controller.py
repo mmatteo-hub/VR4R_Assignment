@@ -6,6 +6,7 @@ import pymap3d as pm
 
 from tf.transformations import euler_from_quaternion
 
+from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from airsim_ros_pkgs.msg import VelCmd, GPSYaw
@@ -36,38 +37,42 @@ class PidDroneController :
         self._load_dynamic_constraints()
         # Initializing the errors
         self._reset_errors()
-        # Creating a publisher for the drone velocity
+        # Creating a Publisher for the drone velocity
         self._vel_pub = rospy.Publisher(
             "/airsim_node/"+self._drone_name+"/vel_cmd_world_frame", VelCmd, queue_size=1
         )
-        # Creating a publisher for the drone global position
-        self._global_odom_pub = rospy.Publisher(
-            "/airsim_node/"+self._drone_name+"/odom_global_ned", Odometry, queue_size=1
-        )
-        # Creating a subscriber for the drone odom
-        self._local_odom_sub = rospy.Subscriber(
-            "/airsim_node/"+self._drone_name+"/odom_local_ned", Odometry, queue_size=1, 
-            callback=self._on_drone_odometry
-        )
-        # Creating a subscriber for the gps home
+        # Creating a Subscriber for the gps home
         self._gps_home_sub = rospy.Subscriber(
             "/airsim_node/origin_geo_point", GPSYaw, queue_size=1,
             callback=self._on_gps_home
         )
-        # Creating a subscriber for the drone gps
+        # Creating a Subscriber for the drone gps
         self._gps_sub = rospy.Subscriber(
             "/airsim_node/"+self._drone_name+"/global_gps", NavSatFix, queue_size=1,
             callback=self._on_drone_gps 
         )
-        # Creating a service for temporarely halting the drone
-        self._alt_sub = rospy.Service(
-            "/airsim_node/"+self._drone_name+"/halt", SetBool,
-            handler=self._on_halt_request_service
+        # Creating a Subscriber for the drone odom
+        self._local_odom_sub = rospy.Subscriber(
+            "/airsim_node/"+self._drone_name+"/odom_local_ned", Odometry, queue_size=1, 
+            callback=self._on_drone_odometry
         )
-        # Creating a service for the goal position
+        # Creating a Publisher for the drone global position
+        self._global_odom_pub = rospy.Publisher(
+            "/airsim_node/"+self._drone_name+"/odom_global_ned", Odometry, queue_size=1
+        )
+        # Creating a Service for the goal position
         self._goal_srv = rospy.Service(
             "/airsim_node/"+self._drone_name+"/local_goal", SetDroneGoalPose, 
             handler=self._on_local_goal_service
+        )
+        # Creating a Publisher for signaling reaching goal
+        self._goal_state_msg = rospy.Publisher(
+            "/airsim_node/"+self._drone_name+"/goal_state", Bool, queue_size=10, latch=True
+        )
+        # Creating a Service for temporarely halting the drone
+        self._alt_sub = rospy.Service(
+            "/airsim_node/"+self._drone_name+"/halt", SetBool,
+            handler=self._on_halt_request_service
         )
         # Creating a timer for handling the update of the velocity
         rospy.Timer(rospy.Duration(self._update_period_sec), self._update_drone_velocity)
@@ -85,10 +90,10 @@ class PidDroneController :
         self._kd_y = rospy.get_param("~kd_y")
         self._kd_z = rospy.get_param("~kd_z")
         self._kd_yaw = rospy.get_param("~kd_yaw")
-        self._goal_xyx_threshold = rospy.get_param("~goal_xyz_threshold")
+        self._goal_xyz_threshold = rospy.get_param("~goal_xyz_threshold")
         self._goal_yaw_threshold = rospy.get_param("~goal_yaw_threshold")
         self._update_period_sec = rospy.get_param("~update_perdiod_sec")
-    
+
 
     def _load_dynamic_constraints(self):
         # Loading all the parameters for the dynamic constraints
@@ -115,7 +120,7 @@ class PidDroneController :
         self._gps_home_pose.yaw = msg.yaw
         # The GPS home is always the same, unregistering
         self._gps_home_sub.unregister()
-    
+
 
     def _on_drone_gps(self, msg):
         # Check if the gps home has been already received
@@ -139,7 +144,7 @@ class PidDroneController :
         iy = "{:.2f}".format(home[1])
         iz = "{:.2f}".format(home[2])
         rospy.loginfo("[PID "+self._drone_name+"] Obtained initial position at [x:"+ix+" y:"+iy+ " z:"+iz+"]!")
-    
+
 
     def _on_drone_odometry(self, msg):
         # Waiting for the home position before computing current position
@@ -163,7 +168,7 @@ class PidDroneController :
         msg.pose.pose.position.z = self._current_pose.z
         self._global_odom_pub.publish(msg)
 
-    
+
     def _on_local_goal_service(self, req):
         if not self._has_odom :
             return SetDroneGoalPoseResponse(False)
@@ -177,9 +182,10 @@ class PidDroneController :
         # There is a new goal to reach
         self._reached_goal = False
         self._reset_errors()
+        self._goal_state_msg.publish(Bool(False))
         # The new goal has been successfully set
         return SetDroneGoalPoseResponse(True)
-    
+
 
     def _on_halt_request_service(self, req):
         # Setting a zero velocity on the drone
@@ -187,7 +193,7 @@ class PidDroneController :
         # Setting the halting mode as requested
         self._is_halting = req.data
         return SetBoolResponse(True, "")
-    
+
 
     def _check_goal_reached(self):
         # If the goal has already been reached, do nothing
@@ -202,11 +208,10 @@ class PidDroneController :
         diff_yaw = angular_dist(self._current_pose.yaw, self._goal_pose.yaw)
         # Checking the thresholds
         rospy.loginfo("[PID "+self._drone_name+"] distance is "+str(diff_xyz))
-        if diff_xyz < self._goal_xyx_threshold and diff_yaw < self._goal_xyx_threshold :
+        if diff_xyz < self._goal_xyz_threshold and diff_yaw < self._goal_xyz_threshold :
             self._reached_goal = True
-            rospy.loginfo("[PID "+self._drone_name+"] Goal pose has been reached!")
 
-    
+
     def _update_drone_velocity(self, event):
         # Check if the current position for the drone is available
         if not self._has_home :
@@ -216,19 +221,23 @@ class PidDroneController :
             rospy.logwarn_once("[PID "+self._drone_name+"] Waiting for first odometry!")
             return
         # Check if the drone is currently halting
-        if self._is_halting :
+        if self._is_halting or self._reached_goal :
             return
         # Check if the current goal has already been reached
         self._check_goal_reached()
         if self._reached_goal :
+            # The goal has just been reached
+            self._goal_state_msg.publish(Bool(True))
+            rospy.loginfo("[PID "+self._drone_name+"] Goal pose has been reached!")
             return
+            
         # Creating the new velocity for the drone
         vel = self._compute_new_velocity()
         self._enforce_dynamic_constraints(vel)
         # Publishing the new velocity
         self._vel_pub.publish(vel)
 
-    
+
     def _compute_new_velocity(self):
         # Computing the error between the current pose and target pose
         curr_error = Object()

@@ -19,10 +19,12 @@ class DronesCollisionAvoidance:
         self._halting_th2 = pow(rospy.get_param("~halting_threshold"), 2.0)
         self._restart_th2 = pow(rospy.get_param("~restart_threshold"), 2.0)
         self._drones_positions = [None]*drones_count
+        self._drones_goal_states = [True]*drones_count
         self._drones_currently_halting = []
         # Creating helper for receiving the data
         self._chain_helper = RelayChainHelper("base_station")
-        self._chain_helper.pose_instruction_callback = self._on_pose_instruction
+        self._chain_helper.on_pose_callback = self._on_drone_position
+        self._chain_helper.on_goal_callback = self._on_dron_goal_state
         # A Subscriber for receiving the data from the chain
         self._chain_sub = rospy.Subscriber(
             "/relay_chain/base_station/backward", RelayInstruction,
@@ -61,11 +63,18 @@ class DronesCollisionAvoidance:
         return list(map(lambda name : name.strip(), string.split(",")))
     
 
-    def _on_pose_instruction(self, drone_name, position):
+    def _on_drone_position(self, drone_name, position):
         # Getting the index for the drone name
         index = self._drones_names.index(drone_name)
         # Storing the updated position of the robot
         self._drones_positions[index] = position
+    
+
+    def _on_dron_goal_state(self, drone_name, is_reached):
+        # Getting the index for the drone name
+        index = self._drones_names.index(drone_name)
+        # Storing the updated position of the robot
+        self._drones_goal_states[index] = is_reached
     
 
     def _check_drones_collisions(self, event):
