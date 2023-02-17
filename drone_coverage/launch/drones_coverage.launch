@@ -1,5 +1,4 @@
 <launch>
-    <!-- This launch file requires the drones names as argument -->
     <arg name="drones_names" />
     
     <node name="drones_coverage" pkg="drone_coverage" type="drones_coverage.py" output="screen">

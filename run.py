@@ -32,36 +32,38 @@ class GnomeTabHelper:
 # Getting the names (and therefore the number) of drones available in the AirSim simulation
 print("Insert the names of drones (as defined in the AirSim settings) separated by spaces.")
 
+# All and only the drones names
 drones_names = list(map(lambda name : name.strip(), filter(None, input().split(" "))))
-# Spawining the pid controllers
-terminal = GnomeTerminalHelper()
-for drone_name in drones_names :
-    args = "drone_name:="+drone_name
-    terminal.add_tab("","roslaunch drone_coverage drone_pid_controller.launch "+args)
-terminal.create()
 
+# The drones names and base_statetion and last empty node
 relay_names = drones_names.copy()
 relay_names.insert(0, "base_station")
 relay_names.append("")
-# Spawning the relay nodes
-terminal = GnomeTerminalHelper()
-for i in range(1, len(drones_names)+1):
-    args =  "prev_name:="+relay_names[i-1]+" " 
-    args += "self_name:="+relay_names[i]+" " 
-    args += "next_name:="+relay_names[i+1]+" "
+
+for relay_name_index in range(1, len(drones_names)+1) :
+    relay_name = relay_names[relay_name_index]
+    # Spawining a console for each drone
+    terminal = GnomeTerminalHelper()
+    # Spawning the pid controller
+    args = "drone_name:="+relay_name
+    terminal.add_tab("","roslaunch drone_coverage drone_pid_controller.launch "+args)
+    # Spawining the relay node
+    args =  "prev_name:="+relay_names[relay_name_index-1]+" " 
+    args += "self_name:="+relay_name+" " 
+    args += "next_name:="+relay_names[relay_name_index+1]+" "
     args += "base_name:="+relay_names[0]
     terminal.add_tab("","roslaunch drone_coverage relay_node.launch "+args)
-terminal.create()
+    # Spawining the collision avoidance
+    args = "drones_names:=["+",".join(drones_names)+"] "
+    args += "drone_name:="+relay_name+" "
+    terminal.add_tab("", "roslaunch drone_coverage drone_collision_avoidance.launch "+args)
+    terminal.create()
 
-# The drones name to pass as parameter
-drones_names_arr =",".join(drones_names)
 
 terminal = GnomeTerminalHelper()
 # Spawning the the graph loader node
-terminal.add_tab("","rosrun graph_loader graph_knowledge.py")
+terminal.add_tab("","roslaunch graph_loader graph_knowledge.launch")
 # Spawning the drone coverage node
-args = "drones_names:=["+drones_names_arr+"]"
+args = "drones_names:=["+",".join(drones_names)+"]"
 terminal.add_tab("","roslaunch drone_coverage drones_coverage.launch "+args)
-# Spawning the collision avoidance node
-terminal.add_tab("", "roslaunch drone_coverage drones_collision_avoidance.launch "+args)
 terminal.create()

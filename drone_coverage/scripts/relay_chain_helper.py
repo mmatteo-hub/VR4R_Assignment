@@ -7,7 +7,6 @@ from drone_coverage_msgs.msg import RelayInstruction
 
 MOVE_INSTRUCTION_ID = 0
 HALT_INSTRUCTION_ID = 1
-POSE_CALLBACK_ID = 2
 GOAL_CALLBACK_ID = 3
 
 class RelayChainHelper:
@@ -17,7 +16,6 @@ class RelayChainHelper:
         # Creating empty callbacks
         self.on_move_instruction = lambda *args, **kwargs: None
         self.on_halt_instruction = lambda *args, **kwargs: None
-        self.on_pose_callback = lambda *args, **kwargs: None
         self.on_goal_callback = lambda *args, **kwargs: None
     
 
@@ -48,8 +46,6 @@ class RelayChainHelper:
                 self._on_move_instruction(msg.data)
             elif msg.instruction == HALT_INSTRUCTION_ID:
                 self._on_halt_instruction(msg.data)
-            elif msg.instruction == POSE_CALLBACK_ID:
-                self._on_pose_callback(msg.data)
             elif msg.instruction == GOAL_CALLBACK_ID:
                 self._on_goal_callback(msg.data)
             return True
@@ -74,33 +70,13 @@ class RelayChainHelper:
         self.on_move_instruction(Point(pos[0], pos[1], pos[2]))
 
     
-    def send_pose_data(self, chain_pub, node_identifier, position):
-        # Creating the instruction for the position of the drone
-        msg = RelayInstruction()
-        msg.identifier = node_identifier
-        msg.instruction = POSE_CALLBACK_ID
-        msg.data = self._self_identifier
-        msg.data += ","+str(position.x)+","+str(position.y)+","+str(position.z)
-        # Setting the requested position
-        chain_pub.publish(msg)
-    
-    
-    def _on_pose_callback(self, data):
-        # Parsing the position from the message
-        data_array = data.split(",")
-        identifier = data_array.pop(0)
-        pos = list(map(float, data_array))
-        # Calling the callback
-        self.on_pose_callback(identifier, Point(pos[0], pos[1], pos[2]))
-
-    
     def send_goal_data(self, chain_pub, node_identifier, is_reached):
         # Creating the instruction mesage
         msg = RelayInstruction()
         msg.identifier = node_identifier
         msg.instruction = GOAL_CALLBACK_ID
         msg.data = self._self_identifier
-        msg.data += ","+is_reached
+        msg.data += ","+str(is_reached)
         # Setting the requested position
         chain_pub.publish(msg)
 
@@ -108,23 +84,23 @@ class RelayChainHelper:
     def _on_goal_callback(self, data):
         data_array = data.split(",")
         identifier = data_array.pop(0)
-        is_reached = bool(data_array[0])
+        is_reached = data_array[0] == 'True'
         # Calling the callback
         self.on_goal_callback(identifier, is_reached)
     
 
-    def send_halt_instruction(self, chain_pub, node_identifier, halting):
+    def send_halt_instruction(self, chain_pub, node_identifier, is_halting):
         # Creating the instruction for halting the drone
         msg = RelayInstruction()
         msg.identifier = node_identifier
         msg.instruction = HALT_INSTRUCTION_ID
-        msg.data = str(halting)
+        msg.data = str(is_halting)
         # Setting the requested position
         chain_pub.publish(msg)
     
 
     def _on_halt_instruction(self, data):
         # Parsing the boolaen
-        halting = bool(data)
+        halting = data == 'True'
         # Calling the callback
         self.on_halt_instruction(halting)

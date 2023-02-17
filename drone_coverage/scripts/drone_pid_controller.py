@@ -37,6 +37,45 @@ class PidDroneController :
         self._load_dynamic_constraints()
         # Initializing the errors
         self._reset_errors()
+        # Creating interfaces for ros communcation
+        self._create_ros_interfaces()
+        # Creating a timer for handling the update of the velocity
+        rospy.Timer(rospy.Duration(self._update_period_sec), self._update_drone_velocity)
+
+
+    def _load_pid_params(self):
+        # Loading the vehicle name this controller is referred to
+        self._drone_name = rospy.get_param("~drone_name")
+        # Loading all the parameters for the pid controller
+        self._kp_x = rospy.get_param("~kp_x")
+        self._kp_y = rospy.get_param("~kp_y")
+        self._kp_z = rospy.get_param("~kp_z")
+        self._kp_yaw = rospy.get_param("~kp_yaw")
+        self._kd_x = rospy.get_param("~kd_x")
+        self._kd_y = rospy.get_param("~kd_y")
+        self._kd_z = rospy.get_param("~kd_z")
+        self._kd_yaw = rospy.get_param("~kd_yaw")
+        self._goal_xyz_threshold = rospy.get_param("~goal_xyz_threshold")
+        self._goal_yaw_threshold = rospy.get_param("~goal_yaw_threshold")
+        self._update_period_sec = rospy.get_param("~update_perdiod_sec")
+
+
+    def _load_dynamic_constraints(self):
+        # Loading all the parameters for the dynamic constraints
+        self._max_vel_horz = rospy.get_param("~max_vel_horz")
+        self._max_vel_vert = rospy.get_param("~max_vel_vert")
+        self._max_vel_rot = rospy.get_param("~max_vel_rot")
+
+
+    def _reset_errors(self) :
+        # Resetting all the errors related to the goal
+        self._prev_error.x = 0.0
+        self._prev_error.y = 0.0
+        self._prev_error.z = 0.0
+        self._prev_error.yaw = 0.0
+    
+
+    def _create_ros_interfaces(self):
         # Creating a Publisher for the drone velocity
         self._vel_pub = rospy.Publisher(
             "/airsim_node/"+self._drone_name+"/vel_cmd_world_frame", VelCmd, queue_size=1
@@ -74,40 +113,6 @@ class PidDroneController :
             "/airsim_node/"+self._drone_name+"/halt", SetBool,
             handler=self._on_halt_request_service
         )
-        # Creating a timer for handling the update of the velocity
-        rospy.Timer(rospy.Duration(self._update_period_sec), self._update_drone_velocity)
-
-
-    def _load_pid_params(self):
-        # Loading the vehicle name this controller is referred to
-        self._drone_name = rospy.get_param("~drone_name")
-        # Loading all the parameters for the pid controller
-        self._kp_x = rospy.get_param("~kp_x")
-        self._kp_y = rospy.get_param("~kp_y")
-        self._kp_z = rospy.get_param("~kp_z")
-        self._kp_yaw = rospy.get_param("~kp_yaw")
-        self._kd_x = rospy.get_param("~kd_x")
-        self._kd_y = rospy.get_param("~kd_y")
-        self._kd_z = rospy.get_param("~kd_z")
-        self._kd_yaw = rospy.get_param("~kd_yaw")
-        self._goal_xyz_threshold = rospy.get_param("~goal_xyz_threshold")
-        self._goal_yaw_threshold = rospy.get_param("~goal_yaw_threshold")
-        self._update_period_sec = rospy.get_param("~update_perdiod_sec")
-
-
-    def _load_dynamic_constraints(self):
-        # Loading all the parameters for the dynamic constraints
-        self._max_vel_horz = rospy.get_param("~max_vel_horz")
-        self._max_vel_vert = rospy.get_param("~max_vel_vert")
-        self._max_vel_rot = rospy.get_param("~max_vel_rot")
-
-
-    def _reset_errors(self) :
-        # Resetting all the errors related to the goal
-        self._prev_error.x = 0.0
-        self._prev_error.y = 0.0
-        self._prev_error.z = 0.0
-        self._prev_error.yaw = 0.0
 
 
     def _on_gps_home(self, msg):

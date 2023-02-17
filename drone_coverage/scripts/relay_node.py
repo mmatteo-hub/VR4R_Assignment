@@ -19,11 +19,11 @@ class RelayNode:
         self._self_identifier = rospy.get_param("~self_name")
         self._has_backward_node = rospy.get_param("~prev_name") != ""
         self._has_forward_node = rospy.get_param("~next_name") != ""
-        # Creating a Publisher for the position of the drone
-        self._odom_sub = rospy.Subscriber(
-            "/airsim_node/self/odom_global_ned", Odometry, 
-            callback=self._on_pose_callback
-        )
+        # Creating interfaces for ros communcation
+        self._create_ros_interfaces()
+    
+
+    def _create_ros_interfaces(self):
         # Creating a ServiceProxy for making the drone move
         self._move_srv = rospy.ServiceProxy(
             '/airsim_node/self/local_goal', SetDroneGoalPose
@@ -38,10 +38,10 @@ class RelayNode:
             callback=self._on_goal_state_callback
         )
         # Finally, initializing topics related to the relay chain
-        self._initialize_relay_chain()
+        self._create_relay_chain_interfaces()
     
 
-    def _initialize_relay_chain(self):
+    def _create_relay_chain_interfaces(self):
         # Creating an helper for handling the relay node
         self._helper = RelayChainHelper(self._self_identifier)
         self._helper.on_move_instruction = self._on_move_instruction
@@ -64,11 +64,6 @@ class RelayNode:
             "/relay_chain/self/backward", RelayInstruction,
             lambda msg : self._helper._on_chain_backward_data(self._backward_pub, msg)
         )
-
-
-    def _on_pose_callback(self, msg):
-        pos = msg.pose.pose.position
-        self._helper.send_pose_data(self._backward_pub, self._base_identifier, pos)
     
 
     def _on_goal_state_callback(self, msg):

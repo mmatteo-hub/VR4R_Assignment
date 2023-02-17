@@ -1,8 +1,6 @@
 <launch>
-    <!-- This launch file requires the drone name as argument -->
     <arg name="drone_name" />
     
-    <!-- This node has its own namespace -->
     <group ns="/pid_controller/$(arg drone_name)">
         <node name="controller" pkg="drone_coverage" type="drone_pid_controller.py" output="screen">
             <param name="drone_name" type="string" value="$(arg drone_name)" />
