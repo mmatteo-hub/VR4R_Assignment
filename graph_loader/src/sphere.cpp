@@ -1,3 +1,6 @@
+/* The C++ code assumes that you're running it within the context of an Unreal Engine 4 game project. 
+The SpawnSpheres() function can be called from anywhere in your code to spawn the spheres.*/
+
 #include "CoreMinimal.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
