@@ -52,15 +52,15 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   CoveragePath.msg
+  DroneGoalPose.msg
   RelayInstruction.msg
-  UpdateGraphWeights.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  SetDroneGoalPose.srv
   LoadCoverageGraph.srv
+  GetNodesForDistance.srv
   ComputeCoveragePath.srv
 )
 

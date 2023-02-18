@@ -37,7 +37,7 @@ class AStar:
             # Analyzing every neighbour of the current node
             for neighbour in current.arcs.keys():
                 # Computing the cost for going from the current node to its neighbour
-                new_cost = cost_so_far[current] + self.cost(current, neighbour)
+                new_cost = cost_so_far[current] + self.cost(current, neighbour) + 1000
                 # If the neighbour is not yet being analyzed or if the new computed cost
                 # is less than the previos computed one, update it
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour] :
@@ -51,6 +51,13 @@ class AStar:
             return None, -1.0
     
         # Reconstructing the path
+        path = AStar._reconstruct_path(goal_node, came_from)
+        # Returning the path and the cost for reaching the goal node
+        return path, cost_so_far[goal_node]
+
+
+    @staticmethod
+    def _reconstruct_path(goal_node, came_from):
         path = [goal_node]
         while True:
             prev = came_from[path[-1]]
@@ -58,6 +65,4 @@ class AStar:
                 break
             path.append(prev)
         path.reverse()
-        
-        # Returning the path and the cost for reaching the goal node
-        return path, cost_so_far[goal_node]
+        return path

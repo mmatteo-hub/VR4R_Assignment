@@ -19,10 +19,6 @@
             <param name="goal_yaw_threshold" type="double" value="5.0" />
             
             <param name="update_perdiod_sec" type="double" value="0.05" />
-
-            <param name="max_vel_horz" type="double" value="1.0" />
-            <param name="max_vel_vert" type="double" value="0.5" />
-            <param name="max_vel_rot" type="double" value="10.0" />
         </node>
     </group>
 </launch>

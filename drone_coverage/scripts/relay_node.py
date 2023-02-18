@@ -4,10 +4,8 @@ import rospy
 from relay_chain_helper import RelayChainHelper
 
 from std_msgs.msg import Bool
-from nav_msgs.msg import Odometry
 from drone_coverage_msgs.msg import RelayInstruction
-from std_srvs.srv import SetBool
-from drone_coverage_msgs.srv import SetDroneGoalPose
+from drone_coverage_msgs.msg import DroneGoalPose
 
 class RelayNode:
 
@@ -25,15 +23,15 @@ class RelayNode:
 
     def _create_ros_interfaces(self):
         # Creating a ServiceProxy for making the drone move
-        self._move_srv = rospy.ServiceProxy(
-            '/airsim_node/self/local_goal', SetDroneGoalPose
+        self._move_pub = rospy.Publisher(
+            '/airsim_node/self/local_goal', DroneGoalPose, queue_size=10, latch=True
         )
         # Creating a ServiceProxy for halting the drone
-        self._halt_srv = rospy.ServiceProxy(
-            '/airsim_node/self/halt', SetBool
+        self._halt_pub = rospy.Publisher(
+            '/airsim_node/self/halt', Bool, queue_size=10, latch=True
         )
         # Creating a Publisher for the goal state update
-        self._goal_state_msg = rospy.Subscriber(
+        self._goal_state_sub = rospy.Subscriber(
             "/airsim_node/self/goal_state", Bool,
             callback=self._on_goal_state_callback
         )
@@ -48,16 +46,16 @@ class RelayNode:
         self._helper.on_halt_instruction = self._on_halt_instruction
         # The Publisher for sending the data in the forward direction
         self._forward_pub = rospy.Publisher(
-            "/relay_chain/next/forward", RelayInstruction, queue_size=10
+            "/relay_chain/next/forward", RelayInstruction, queue_size=10, latch=True
+        )
+        # The Publisher for sending the data in the backward direction
+        self._backward_pub = rospy.Publisher(
+            "/relay_chain/prev/backward", RelayInstruction, queue_size=10, latch=True
         )
         # The Subscriber for receiving the data in the forward direction
         self._forward_sub = rospy.Subscriber(
             "/relay_chain/self/forward", RelayInstruction,
             lambda msg : self._helper._on_chain_forward_data(self._forward_pub, msg)
-        )
-        # The Publisher for sending the data in the backward direction
-        self._backward_pub = rospy.Publisher(
-            "/relay_chain/prev/backward", RelayInstruction, queue_size=10
         )
         # The Subscriber for receiving the data in the backward direction
         self._backward_sub = rospy.Subscriber(
@@ -71,12 +69,12 @@ class RelayNode:
     
 
     def _on_move_instruction(self, pos):
-        self._move_srv(pos.x, pos.y, pos.z, 0)
+        self._move_pub.publish(DroneGoalPose(pos.x, pos.y, pos.z, 0))
         rospy.loginfo("["+rospy.get_name()+"] Moving to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
     
 
     def _on_halt_instruction(self, is_halting):
-        self._halt_srv(is_halting)
+        self._halt_pub.publish(Bool(is_halting))
         rospy.loginfo("["+rospy.get_name()+"] "+("Halting" if is_halting else "Restating")+"!")
 
 

@@ -5,10 +5,3 @@ float64 x
 float64 y
 float64 z
 float64 yaw
-
----
-
-# RESPONSE
-
-# If the request was sucessfull
-bool success
