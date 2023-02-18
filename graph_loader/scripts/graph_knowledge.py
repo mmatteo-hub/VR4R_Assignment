@@ -4,12 +4,15 @@ import rospy
 import json
 import math
 
+from threading import Event
+
 from graph import DirectionalWeightedGraph
 from a_star import AStar
 
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 from drone_coverage_msgs.msg import CoveragePath
+from drone_coverage_msgs.srv import GetNodesForDistance, GetNodesForDistanceResponse
 from drone_coverage_msgs.srv import LoadCoverageGraph, LoadCoverageGraphResponse
 from drone_coverage_msgs.srv import ComputeCoveragePath, ComputeCoveragePathResponse
 
@@ -52,6 +55,7 @@ class GraphLoader:
         self._cost_update_period_sec = rospy.get_param("~cost_update_period_sec")
         # Initializing the data
         self._graph = DirectionalWeightedGraph()
+        self._graph_loaded_event = Event()
         self._nodes = {}
         self._last_path = None
         self._last_cost = -1
@@ -61,10 +65,24 @@ class GraphLoader:
         rospy.loginfo("Starting to wait for graph...")
         # Creating a timer for handling the update of the dynamic costs
         update_func = lambda event : self._update_weights(self._nodes.values(), self._cost_delta)
-        #rospy.Timer(rospy.Duration(self._cost_update_period_sec), update_func)
+        rospy.Timer(rospy.Duration(self._cost_update_period_sec), update_func)
     
 
     def _create_ros_interfaces(self):
+        # A Subscriber for updating the wind
+        self._wind_sub = rospy.Subscriber(
+            "/graph_knowledge/wind", Point,
+            callback=self._on_update_wind_message
+        )
+        # A Subscriber for updating the dynamic weights
+        self._weights_update_sub = rospy.Subscriber(
+            "/graph_knowledge/update_last_path_weights", Float64,
+            callback=lambda msg : self._update_weights(self._last_path, msg.data)
+        )
+        # A Publisher for publishing a new coverage path
+        self._path_pub = rospy.Publisher(
+            "/graph_knowledge/path", CoveragePath, queue_size=1
+        )
         # A Service for loading a new graph
         self._load_graph_srv = rospy.Service(
             "/graph_knowledge/load_graph", LoadCoverageGraph, 
@@ -75,19 +93,10 @@ class GraphLoader:
             "/graph_knowledge/compute_path", ComputeCoveragePath, 
             handler=self._on_compute_path_service
         )
-        # A Subscriber for updating the wind
-        self._wind_sub = rospy.Subscriber(
-            "/graph_knowledge/wind", Point,
-            callback=self._on_update_wind_message
-        )
-        # A Subscriber for updating the dynamic weights
-        self._weights_update_sub = rospy.Subscriber(
-            "/graph_knowledge/update_last_path_weights", Float64,
-            callback=lambda msg : self._update_weights(self._last_path, msg.value)
-        )
-        # A Publisher for publishing a new coverage path
-        self._path_pub = rospy.Publisher(
-            "/graph_knowledge/path", CoveragePath, queue_size=1
+        # A Service for getting the nodes for a given distance
+        self._distance_nodes_srv = rospy.Service(
+            "/graph_knowledge/nodes_of_distance", GetNodesForDistance,
+            handler=self._on_nodes_for_distance_service
         )
 
     
@@ -113,6 +122,7 @@ class GraphLoader:
             # Computing the nodes distances
             self._set_nodes_distances(self._nodes[data["center"]])
         # Logging info
+        self._graph_loaded_event.set()
         rospy.loginfo("Received and loaded new graph correctly!")
         return LoadCoverageGraphResponse(True)
     
@@ -143,8 +153,13 @@ class GraphLoader:
             frontier = new_frontier
     
 
-    def _compute_weight(self, node0, node1):
-        return CoverageData.computeDirectionalCost(node0.value, node1.value, self._wind)
+    def _on_nodes_for_distance_service(self, req):
+        # Waiting for the graph to be fully loaded
+        self._graph_loaded_event.wait()
+        # Getting all the nodes for the specified distance
+        nodes = filter(lambda node : node.value.distance == req.distance, self._nodes.values())
+        nodes_names = list(map(lambda node : node.value.name, nodes))
+        return GetNodesForDistanceResponse(nodes_names)
     
     
     def _on_update_wind_message(self, msg):
@@ -155,6 +170,8 @@ class GraphLoader:
 
 
     def _on_compute_path_service(self, req):
+        # Waiting for the graph to be fully loaded
+        self._graph_loaded_event.wait()
         # Obtaining the requested nodes
         node_start = self._nodes[req.node_start]
         node_goal = self._nodes[req.node_goal]
@@ -173,6 +190,10 @@ class GraphLoader:
         self._path_pub.publish(msg)
         return ComputeCoveragePathResponse(True)
 
+
+    def _compute_weight(self, node0, node1):
+        return CoverageData.computeDirectionalCost(node0.value, node1.value, self._wind)
+    
 
     def _update_weights(self, nodes, delta):
         # Updating the cost of all the weights

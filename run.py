@@ -1,4 +1,5 @@
 import os
+import rospy
 
 class GnomeTerminalHelper:
 
@@ -34,6 +35,11 @@ print("Insert the names of drones (as defined in the AirSim settings) separated 
 
 # All and only the drones names
 drones_names = list(map(lambda name : name.strip(), filter(None, input().split(" "))))
+# Setting the drones names as parameter on the ROS ParameterServer
+rospy.set_param("drones_names", "["+",".join(drones_names)+"]")
+rospy.set_param("drone_max_vel_horz", 1.0)
+rospy.set_param("drone_max_vel_vert", 0.5)
+rospy.set_param("drone_max_vel_rotz", 10.0)
 
 # The drones names and base_statetion and last empty node
 relay_names = drones_names.copy()
@@ -47,16 +53,15 @@ for relay_name_index in range(1, len(drones_names)+1) :
     # Spawning the pid controller
     args = "drone_name:="+relay_name
     terminal.add_tab("","roslaunch drone_coverage drone_pid_controller.launch "+args)
+    # Spawining the collision avoidance
+    args = "drone_name:="+relay_name
+    terminal.add_tab("", "roslaunch drone_coverage drone_collision_avoidance.launch "+args)
     # Spawining the relay node
     args =  "prev_name:="+relay_names[relay_name_index-1]+" " 
     args += "self_name:="+relay_name+" " 
     args += "next_name:="+relay_names[relay_name_index+1]+" "
     args += "base_name:="+relay_names[0]
     terminal.add_tab("","roslaunch drone_coverage relay_node.launch "+args)
-    # Spawining the collision avoidance
-    args = "drones_names:=["+",".join(drones_names)+"] "
-    args += "drone_name:="+relay_name+" "
-    terminal.add_tab("", "roslaunch drone_coverage drone_collision_avoidance.launch "+args)
     terminal.create()
 
 
@@ -64,6 +69,5 @@ terminal = GnomeTerminalHelper()
 # Spawning the the graph loader node
 terminal.add_tab("","roslaunch graph_loader graph_knowledge.launch")
 # Spawning the drone coverage node
-args = "drones_names:=["+",".join(drones_names)+"]"
-terminal.add_tab("","roslaunch drone_coverage drones_coverage.launch "+args)
+terminal.add_tab("","roslaunch drone_coverage drones_coverage.launch")
 terminal.create()

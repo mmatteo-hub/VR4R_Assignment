@@ -10,8 +10,7 @@ from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from airsim_ros_pkgs.msg import VelCmd, GPSYaw
-from std_srvs.srv import SetBool, SetBoolResponse
-from drone_coverage_msgs.srv import SetDroneGoalPose, SetDroneGoalPoseResponse
+from drone_coverage_msgs.msg import DroneGoalPose
 
 
 class Object :
@@ -62,9 +61,9 @@ class PidDroneController :
 
     def _load_dynamic_constraints(self):
         # Loading all the parameters for the dynamic constraints
-        self._max_vel_horz = rospy.get_param("~max_vel_horz")
-        self._max_vel_vert = rospy.get_param("~max_vel_vert")
-        self._max_vel_rot = rospy.get_param("~max_vel_rot")
+        self._max_vel_horz = rospy.get_param("/drone_max_vel_horz")
+        self._max_vel_vert = rospy.get_param("/drone_max_vel_vert")
+        self._max_vel_rotz = rospy.get_param("/drone_max_vel_rotz")
 
 
     def _reset_errors(self) :
@@ -76,46 +75,46 @@ class PidDroneController :
     
 
     def _create_ros_interfaces(self):
-        # Creating a Publisher for the drone velocity
-        self._vel_pub = rospy.Publisher(
-            "/airsim_node/"+self._drone_name+"/vel_cmd_world_frame", VelCmd, queue_size=1
-        )
         # Creating a Subscriber for the gps home
         self._gps_home_sub = rospy.Subscriber(
             "/airsim_node/origin_geo_point", GPSYaw, queue_size=1,
-            callback=self._on_gps_home
+            callback=self._on_gps_home_message
         )
         # Creating a Subscriber for the drone gps
         self._gps_sub = rospy.Subscriber(
             "/airsim_node/"+self._drone_name+"/global_gps", NavSatFix, queue_size=1,
-            callback=self._on_drone_gps 
+            callback=self._on_drone_gps_message 
         )
         # Creating a Subscriber for the drone odom
         self._local_odom_sub = rospy.Subscriber(
             "/airsim_node/"+self._drone_name+"/odom_local_ned", Odometry, queue_size=1, 
-            callback=self._on_drone_odometry
+            callback=self._on_drone_odometry_message
+        )
+        # Creating a Service for the goal position
+        self._goal_msg = rospy.Subscriber(
+            "/airsim_node/"+self._drone_name+"/local_goal", DroneGoalPose, 
+            callback=self._on_local_goal_message
+        )
+        # Creating a Service for temporarely halting the drone
+        self._alt_sub = rospy.Subscriber(
+            "/airsim_node/"+self._drone_name+"/halt", Bool,
+            callback=self._on_halt_request_message
+        )
+        # Creating a Publisher for the drone velocity
+        self._vel_pub = rospy.Publisher(
+            "/airsim_node/"+self._drone_name+"/vel_cmd_pid_controller", VelCmd, queue_size=1
         )
         # Creating a Publisher for the drone global position
         self._global_odom_pub = rospy.Publisher(
             "/airsim_node/"+self._drone_name+"/odom_global_ned", Odometry, queue_size=1
         )
-        # Creating a Service for the goal position
-        self._goal_srv = rospy.Service(
-            "/airsim_node/"+self._drone_name+"/local_goal", SetDroneGoalPose, 
-            handler=self._on_local_goal_service
-        )
         # Creating a Publisher for signaling reaching goal
         self._goal_state_msg = rospy.Publisher(
             "/airsim_node/"+self._drone_name+"/goal_state", Bool, queue_size=10, latch=True
         )
-        # Creating a Service for temporarely halting the drone
-        self._alt_sub = rospy.Service(
-            "/airsim_node/"+self._drone_name+"/halt", SetBool,
-            handler=self._on_halt_request_service
-        )
 
 
-    def _on_gps_home(self, msg):
+    def _on_gps_home_message(self, msg):
         self._has_gps_home = True
         # Storing the current gps home position
         self._gps_home_pose = Object()
@@ -127,7 +126,7 @@ class PidDroneController :
         self._gps_home_sub.unregister()
 
 
-    def _on_drone_gps(self, msg):
+    def _on_drone_gps_message(self, msg):
         # Check if the gps home has been already received
         if not self._has_gps_home :
             return
@@ -151,7 +150,7 @@ class PidDroneController :
         rospy.loginfo("[PID "+self._drone_name+"] Obtained initial position at [x:"+ix+" y:"+iy+ " z:"+iz+"]!")
 
 
-    def _on_drone_odometry(self, msg):
+    def _on_drone_odometry_message(self, msg):
         # Waiting for the home position before computing current position
         if not self._has_home :
             return
@@ -174,30 +173,27 @@ class PidDroneController :
         self._global_odom_pub.publish(msg)
 
 
-    def _on_local_goal_service(self, req):
+    def _on_local_goal_message(self, msg):
         if not self._has_odom :
-            return SetDroneGoalPoseResponse(False)
+            return
         # Storing the requested goal position
-        self._goal_pose.x = req.x
-        self._goal_pose.y = req.y
-        self._goal_pose.z = -req.z
-        self._goal_pose.yaw = req.yaw
+        self._goal_pose.x = msg.x
+        self._goal_pose.y = msg.y
+        self._goal_pose.z = -msg.z
+        self._goal_pose.yaw = msg.yaw
         # Debugging
-        rospy.loginfo("[PID "+self._drone_name+"] Requested goal x:"+str(req.x)+" y:"+str(req.y)+ " z:"+str(req.z))
+        rospy.loginfo("[PID "+self._drone_name+"] Requested goal x:"+str(msg.x)+" y:"+str(msg.y)+ " z:"+str(msg.z))
         # There is a new goal to reach
         self._reached_goal = False
         self._reset_errors()
         self._goal_state_msg.publish(Bool(False))
-        # The new goal has been successfully set
-        return SetDroneGoalPoseResponse(True)
 
 
-    def _on_halt_request_service(self, req):
+    def _on_halt_request_message(self, msg):
         # Setting a zero velocity on the drone
         self._vel_pub.publish(VelCmd())
         # Setting the halting mode as requested
-        self._is_halting = req.data
-        return SetBoolResponse(True, "")
+        self._is_halting = msg.data
 
 
     def _check_goal_reached(self):
@@ -282,8 +278,8 @@ class PidDroneController :
         if abs(vel.twist.linear.z) > self._max_vel_vert :
             vel.twist.linear.z = math.copysign(self._max_vel_vert, vel.twist.linear.z)
         # Clamping the rotation velocity
-        if abs(vel.twist.angular.z) > self._max_vel_rot :
-            vel.twist.angular.z = math.copysign(self._max_vel_rot, vel.twist.angular.z)
+        if abs(vel.twist.angular.z) > self._max_vel_rotz :
+            vel.twist.angular.z = math.copysign(self._max_vel_rotz, vel.twist.angular.z)
 
 
 
