@@ -95,12 +95,12 @@ class DronesCoverage:
         rospy.loginfo("["+rospy.get_name()+"] "+drone_name+" reached goal position!")
         # Check if all the drones arrived at destination
         if self._remaining_drones_to_reach_goal == 0 :
-            # Update the path nodes with the new cost
-            self._cost_pub.publish(Float64(self._path_update_delta_cost))
             # Wait for the drones to explore the position
             rospy.loginfo("["+rospy.get_name()+"] Waiting some time for the drones exploration.")
             rospy.sleep(self._path_request_period_sec)
             rospy.loginfo("["+rospy.get_name()+"] Requesting a new path.")
+            # Update the path nodes with the new cost
+            self._cost_pub.publish(Float64(self._path_update_delta_cost))
             # Requesting a new path with the new goal
             node = self._reacheable_nodes.pop(0)
             self._reacheable_nodes.append(node)
