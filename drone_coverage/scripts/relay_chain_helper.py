@@ -6,8 +6,7 @@ from geometry_msgs.msg import Point
 from drone_coverage_msgs.msg import RelayInstruction
 
 MOVE_INSTRUCTION_ID = 0
-HALT_INSTRUCTION_ID = 1
-GOAL_CALLBACK_ID = 3
+GOAL_CALLBACK_ID = 1
 
 class RelayChainHelper:
 
@@ -15,7 +14,6 @@ class RelayChainHelper:
         self._self_identifier = self_identifier
         # Creating empty callbacks
         self.on_move_instruction = lambda *args, **kwargs: None
-        self.on_halt_instruction = lambda *args, **kwargs: None
         self.on_goal_callback = lambda *args, **kwargs: None
     
 
@@ -44,8 +42,6 @@ class RelayChainHelper:
             # This drone has executed the instruction
             if msg.instruction == MOVE_INSTRUCTION_ID:
                 self._on_move_instruction(msg.data)
-            elif msg.instruction == HALT_INSTRUCTION_ID:
-                self._on_halt_instruction(msg.data)
             elif msg.instruction == GOAL_CALLBACK_ID:
                 self._on_goal_callback(msg.data)
             return True
