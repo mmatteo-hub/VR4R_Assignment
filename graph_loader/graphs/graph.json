@@ -1,103 +1,108 @@
 {
+	"center": "p25",
 	"nodes": {
 		"p0": {
-			"position": [0,0,2],
+			"position": [12.8,-31.7,2],
 			"difficulty": 0
 		},
 		"p1": {
-			"position": [10.6,13.4,2],
+			"position": [23.4,-18.3,2],
 			"difficulty": 0
 		},
 		"p2": {
-			"position": [23.8,21.2,2],
+			"position": [36.6,-10.5,2],
 			"difficulty": 0
 		},
 		"p3": {
-			"position": [36.6,8,2],
+			"position": [49.4,-23.7,2],
 			"difficulty": 0
 		},
 		"p4": {
-			"position": [26.6,-5.8,2],
+			"position": [39.4,-37.5,2],
 			"difficulty": 0
 		},
 		"p5": {
-			"position": [45.2,-45.4,2],
+			"position": [58,-77.1,2],
 			"difficulty": 0
 		},
 		"p6": {
-			"position": [55.8,-30.2,2],
+			"position": [68.6,-61.9,2],
 			"difficulty": 0
 		},
 		"p7": {
-			"position": [73.4,-17.4,2],
+			"position": [86.2,-49.1,2],
 			"difficulty": 0
 		},
 		"p8": {
-			"position": [87.2,-24,2],
+			"position": [100,-55.7,2],
 			"difficulty": 0
 		},
 		"p9": {
-			"position": [70.8,-46,2],
+			"position": [83.6,-77.7,2],
 			"difficulty": 0
 		},
 		"p10": {
-			"position": [104.2,-70.2,2],
+			"position": [117,-101.9,2],
 			"difficulty": 0
 		},
 		"p11": {
-			"position": [109.6,-56,2],
+			"position": [122.4,-87.7,2],
 			"difficulty": 0
 		},
 		"p12": {
-			"position": [118.8,-37,2],
+			"position": [131.6,-68.7,2],
 			"difficulty": 0
 		},
 		"p13": {
-			"position": [129.4,-23.6,2],
+			"position": [142.2,-55.3,2],
 			"difficulty": 0
 		},
 		"p14": {
-			"position": [140.2,-52.4,2],
+			"position": [153,-84.1,2],
 			"difficulty": 0
 		},
 		"p15": {
-			"position": [166.4,-72.6,2],
+			"position": [179.2,-104.3,2],
 			"difficulty": 0
 		},
 		"p16": {
-			"position": [169.2,-54.8,2],
+			"position": [182,-86.5,2],
 			"difficulty": 0
 		},
 		"p17": {
-			"position": [184.8,-41.4,2],
+			"position": [197.6,-73.1,2],
 			"difficulty": 0
 		},
 		"p18": {
-			"position": [207.2,-44,2],
+			"position": [220,-75.7,2],
 			"difficulty": 0
 		},
 		"p19": {
-			"position": [197.4,-68.8,2],
+			"position": [210.2,-100.5,2],
 			"difficulty": 0
 		},
 		"p20": {
-			"position": [226.2,-81.6,2],
+			"position": [239,-113.3,2],
 			"difficulty": 0
 		},
 		"p21": {
-			"position": [228,-69.2,2],
+			"position": [240.8,-100.9,2],
 			"difficulty": 0
 		},
 		"p22": {
-			"position": [230.8,-52.6,2],
+			"position": [243.6,-84.3,2],
 			"difficulty": 0
 		},
 		"p23": {
-			"position": [236.6,-36.2,2],
+			"position": [249.4,-67.9,2],
 			"difficulty": 0
 		},
 		"p24": {
-			"position": [244.2,-62,2],
+			"position": [257,-93.7,2],
+			"difficulty": 0
+		},
+		"p25": {
+			"position": [0,0,2],
 			"difficulty": 0
 		}
 	},
@@ -206,6 +211,11 @@
 		["p18","p21"],
 		["p18","p22"],
 		["p18","p23"],
-		["p18","p24"]
+		["p18","p24"],
+		["p25","p0"],
+		["p25","p1"],
+		["p25","p2"],
+		["p25","p4"],
+		["p25","p3"]
 	]
 }
