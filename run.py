@@ -37,8 +37,8 @@ print("Insert the names of drones (as defined in the AirSim settings) separated 
 drones_names = list(map(lambda name : name.strip(), filter(None, input().split(" "))))
 # Setting the drones names as parameter on the ROS ParameterServer
 rospy.set_param("drones_names", "["+",".join(drones_names)+"]")
-rospy.set_param("drone_max_vel_horz", 1.0)
-rospy.set_param("drone_max_vel_vert", 0.5)
+rospy.set_param("drone_max_vel_horz", 3.0)
+rospy.set_param("drone_max_vel_vert", 3.0)
 rospy.set_param("drone_max_vel_rotz", 10.0)
 
 # The drones names and base_statetion and last empty node

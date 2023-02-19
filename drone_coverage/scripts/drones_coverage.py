@@ -28,12 +28,14 @@ class DronesCoverage:
         # Creating interfaces for ros communcation
         self._create_ros_interfaces()
         # Obtaining the nodes for the given distance
+        # Also considering that the first node is the "base station node" which will not
+        # be taken into account when moving drones
         self._nodes_distance_srv.wait_for_service()
         self._reacheable_nodes = self._nodes_distance_srv(len(self._drones_names)).nodes
         self._base_node = self._nodes_distance_srv(0).nodes[0]
         # Computing the first path
         self._create_path_srv.wait_for_service()
-        #self._create_path_srv.call(self._base_node, self._reacheable_nodes[0])
+        self._create_path_srv.call(self._base_node, self._reacheable_nodes[0])
 
 
     def _create_ros_interfaces(self):
@@ -68,15 +70,16 @@ class DronesCoverage:
     def _on_path_updated(self, msg):
         # Storing the last requested path
         self._last_path = msg.path
+        actual_path = self._last_path[1:]
         # Check if the number of drones are enough
-        nodes_count = len(self._last_path)
+        nodes_count = len(actual_path)
         drone_count = len(self._drones_names)
         size = min(nodes_count, drone_count)
         # Moving the drones to the desired position
         # We want to move the last drone in the chain first
         for i in reversed(range(size)) :
             drone_name = self._drones_names[i]
-            pos = self._last_path[i]
+            pos = actual_path[i]
             self._chain_helper.send_move_instruction(self._chain_pub, drone_name, pos)
             rospy.loginfo("["+rospy.get_name()+"] Moving "+drone_name+" to (x:"+str(pos.x)+" y:"+str(pos.y)+ " z:"+str(pos.z)+")")
         # Marking the drones that have yet to reach the position
@@ -84,7 +87,6 @@ class DronesCoverage:
     
 
     def on_drone_reach_goal(self, drone_name, is_reached):
-        return
         # We are only interested in the case a drone reaches a goal
         if not is_reached :
             return

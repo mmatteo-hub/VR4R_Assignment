@@ -23,13 +23,13 @@ class PidDroneController :
         # Initializing this node
         rospy.init_node("drone_pid_controller")
         # Initializing other variables
+        self._has_home = False
+        self._has_odom = False
         self._reached_goal = True
         self._is_halting = False
-        self._has_odom = False
-        self._has_gps_home = False
-        self._has_home = False
         self._prev_error = Object()
         self._current_pose = Object()
+        self._home_pose = Object()
         self._goal_pose = Object()
         # Loading all the private parameters for this controller
         self._load_pid_params()
@@ -75,11 +75,6 @@ class PidDroneController :
     
 
     def _create_ros_interfaces(self):
-        # Creating a Subscriber for the gps home
-        self._gps_home_sub = rospy.Subscriber(
-            "/airsim_node/origin_geo_point", GPSYaw, queue_size=1,
-            callback=self._on_gps_home_message
-        )
         # Creating a Subscriber for the drone gps
         self._gps_sub = rospy.Subscriber(
             "/airsim_node/"+self._drone_name+"/global_gps", NavSatFix, queue_size=1,
@@ -114,34 +109,16 @@ class PidDroneController :
         )
 
 
-    def _on_gps_home_message(self, msg):
-        self._has_gps_home = True
-        # Storing the current gps home position
-        self._gps_home_pose = Object()
-        self._gps_home_pose.lat = msg.latitude
-        self._gps_home_pose.lon = msg.longitude
-        self._gps_home_pose.alt = msg.altitude
-        self._gps_home_pose.yaw = msg.yaw
-        # The GPS home is always the same, unregistering
-        self._gps_home_sub.unregister()
-
-
     def _on_drone_gps_message(self, msg):
-        # Check if the gps home has been already received
-        if not self._has_gps_home :
-            return
         # Computing the current position in ned coordinates
-        hlat = self._gps_home_pose.lat
-        hlon = self._gps_home_pose.lon
-        halt = self._gps_home_pose.alt
-        home = pm.geodetic2ned(msg.latitude, msg.longitude, msg.altitude, hlat, hlon, halt)
+        home = pm.geodetic2ned(msg.latitude, msg.longitude, msg.altitude, 0, 0, 0)
         # Storing the home position and unregistering
         self._has_home = True
         self._home_pose = Object()
         self._home_pose.x = home[0]
         self._home_pose.y = home[1]
         self._home_pose.z = home[2]
-        self._home_pose.yaw = self._gps_home_pose.yaw
+        self._home_pose.yaw = 0.0
         self._gps_sub.unregister()
         # Debugging
         ix = "{:.2f}".format(home[0])

@@ -51,8 +51,10 @@ class GraphLoader:
         # Initializing the ros node for handling graphs and nodes
         rospy.init_node("graph_knowledge")
         # Getting parameters
-        self._cost_delta = rospy.get_param("~cost_delta")
-        self._cost_update_period_sec = rospy.get_param("~cost_update_period_sec")
+        self._dynamic_cost_delta = rospy.get_param("~dynamic_cost_delta")
+        self._dynamic_cost_update_period_sec = rospy.get_param("~dynamic_cost_update_period_sec")
+        self._dynamic_cost_max = rospy.get_param("~dynamic_cost_max")
+        self._nodes_base_cost = rospy.get_param("~nodes_base_cost")
         # Initializing the data
         self._graph = DirectionalWeightedGraph()
         self._graph_loaded_event = Event()
@@ -64,8 +66,8 @@ class GraphLoader:
         self._create_ros_interfaces()
         rospy.loginfo("Starting to wait for graph...")
         # Creating a timer for handling the update of the dynamic costs
-        update_func = lambda event : self._update_weights(self._nodes.values(), self._cost_delta)
-        rospy.Timer(rospy.Duration(self._cost_update_period_sec), update_func)
+        update_func = lambda event : self._update_weights(self._nodes.values(), self._dynamic_cost_delta)
+        rospy.Timer(rospy.Duration(self._dynamic_cost_update_period_sec), update_func)
     
 
     def _create_ros_interfaces(self):
@@ -159,6 +161,7 @@ class GraphLoader:
         # Getting all the nodes for the specified distance
         nodes = filter(lambda node : node.value.distance == req.distance, self._nodes.values())
         nodes_names = list(map(lambda node : node.value.name, nodes))
+        print(nodes_names)
         return GetNodesForDistanceResponse(nodes_names)
     
     
@@ -175,8 +178,12 @@ class GraphLoader:
         # Obtaining the requested nodes
         node_start = self._nodes[req.node_start]
         node_goal = self._nodes[req.node_goal]
+        # The cost for moving from node0 to node1 is given by the weight
+        # and an additional parameter which prevent A* from computing paths
+        # with too many nodes (considering the dynamic costs)
+        costs = lambda n0, n1 : self._graph.weight(n0, n1) + self._nodes_base_cost
         # Computing the path with A*
-        a_star = AStar(self._graph, self._graph.weight, self._compute_weight)
+        a_star = AStar(self._graph, costs, self._compute_weight)
         self._last_path, self._last_cost = a_star.search(node_start, node_goal)
         # Check if the path was computed successfully
         if self._last_path == None :
@@ -199,7 +206,7 @@ class GraphLoader:
         # Updating the cost of all the weights
         for node in nodes :
             new_cost = node.value.dynamic_cost + delta
-            node.value.dynamic_cost = max(0, new_cost)
+            node.value.dynamic_cost = min(max(0, new_cost), self._dynamic_cost_max)
         # Updating all the weights
         self._graph.update_weights(self._compute_weight)
 
