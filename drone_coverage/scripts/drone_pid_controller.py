@@ -110,7 +110,7 @@ class PidDroneController :
         )
         # Creating a Publisher for signaling reaching goal
         self._goal_state_msg = rospy.Publisher(
-            "/airsim_node/"+self._drone_name+"/goal_state", Bool, queue_size=10, latch=True
+            "/airsim_node/"+self._drone_name+"/goal_state", Bool, queue_size=1, latch=True
         )
 
 

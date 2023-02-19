@@ -37,7 +37,7 @@ class AStar:
             # Analyzing every neighbour of the current node
             for neighbour in current.arcs.keys():
                 # Computing the cost for going from the current node to its neighbour
-                new_cost = cost_so_far[current] + self.cost(current, neighbour) + 1000
+                new_cost = cost_so_far[current] + self.cost(current, neighbour) + 10000
                 # If the neighbour is not yet being analyzed or if the new computed cost
                 # is less than the previos computed one, update it
                 if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour] :

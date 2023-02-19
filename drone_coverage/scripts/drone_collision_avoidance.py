@@ -3,12 +3,11 @@ import rospy
 import math
 
 from coverage_utils import CoverageUtils
-from relay_chain_helper import RelayChainHelper
 
+from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point
 from airsim_ros_pkgs.msg import VelCmd
-from drone_coverage_msgs.msg import RelayInstruction
 
 class DroneCollisionAvoidance:
 
@@ -30,9 +29,6 @@ class DroneCollisionAvoidance:
         self._drones_at_goal = [True]*drones_count
         self._should_be_halting = False
         self._is_halting = False
-        # Creating helper for receiving the data
-        self._chain_helper = RelayChainHelper("base_station")
-        self._chain_helper.on_goal_callback = self._on_drone_goal_state
         # Creating interfaces for ros communcation
         self._create_ros_interfaces()
         # Creating a rate for stopping the halting
@@ -42,18 +38,14 @@ class DroneCollisionAvoidance:
     def _create_ros_interfaces(self):
         # The name of this drone
         drone_name = self._drones_names[self._drone_index]
-        # A Publisher for sending the data to the chain
-        self._chain_pub = rospy.Publisher(
-            "/relay_chain/"+self._drones_names[0]+"/forward", RelayInstruction, queue_size=10, latch=True
-        )
+
         # Creating a Publisher for listening to the drone velocity
         self._vel_pub = rospy.Publisher(
             "/airsim_node/"+drone_name+"/vel_cmd_world_frame", VelCmd, queue_size=1
         )
-        # A Subscriber for receiving the data from the chain
-        self._chain_sub = rospy.Subscriber(
-            "/relay_chain/base_station/backward", RelayInstruction,
-            lambda msg: self._chain_helper._on_chain_backward_data(None, msg)
+        # Creating a Publisher for halting the drone
+        self._halt_pub = rospy.Publisher(
+            "/airsim_node/"+drone_name+"/halt", Bool, queue_size=1
         )
         # Creatin a Subscriber for publishing the drone velocity
         self._vel_sub = rospy.Subscriber(
@@ -62,11 +54,16 @@ class DroneCollisionAvoidance:
         )
         # All Subscribers for the drones positions
         for index in range(len(self._drones_names)):
-            # Creating a subscriber for each drone odometry
             drone_name = self._drones_names[index]
+            # Creating a subscriber for each drone odometry
             rospy.Subscriber(
                 "/airsim_node/"+drone_name+"/odom_global_ned", Odometry, 
                 lambda msg, index=index : self._on_drone_odometry_message(msg, index)
+            )
+            # Creating a subscriber for the drone goal state
+            rospy.Subscriber(
+                "/airsim_node/"+drone_name+"/goal_state", Bool, 
+                lambda msg, index=index : self._on_drone_goal_state(msg, index)
             )
 
 
@@ -75,11 +72,9 @@ class DroneCollisionAvoidance:
         self._drones_positions[index] = msg.pose.pose.position
     
 
-    def _on_drone_goal_state(self, drone_name, is_reached):
-        # Getting the index for the drone name
-        index = self._drones_names.index(drone_name)
+    def _on_drone_goal_state(self, msg, index):
         # Storing the updated position of the robot
-        self._drones_at_goal[index] = is_reached
+        self._drones_at_goal[index] = msg.data
     
 
     def _on_drone_velocity(self, msg):
@@ -124,15 +119,13 @@ class DroneCollisionAvoidance:
     def _toggle_halt_logic(self, event):
         # Making the drones halt if needed
         if not self._is_halting and self._should_halt_drone(self._halting_th2):
-            drone_name = self._drones_names[self._drone_index]
-            self._chain_helper.send_halt_instruction(self._chain_pub, drone_name, True)
+            self._halt_pub.publish(Bool(True))
             self._is_halting = True
             rospy.loginfo("["+rospy.get_name()+"] Halting drone!")
             return
         # Making the drone stop halting if he does not need to
         if self._is_halting and not self._should_halt_drone(self._restart_th2):
-            drone_name = self._drones_names[self._drone_index]
-            self._chain_helper.send_halt_instruction(self._chain_pub, drone_name, False)
+            self._halt_pub.publish(Bool(False))
             self._is_halting = False
             rospy.loginfo("["+rospy.get_name()+"] Restarting drone!")
             return
@@ -155,7 +148,6 @@ class DroneCollisionAvoidance:
             if distance2(drone_pose, other_pose) < threshold2 :
                 return True
         return False
-
 
 
 
