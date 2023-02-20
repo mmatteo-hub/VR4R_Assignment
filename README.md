@@ -18,6 +18,8 @@ All the spheres started with red, then they become green when discovered by a dr
 The only node which remains red is the starting one which is not a node to perform a coverage on but it only represents the base station. <br>
 The graph nodes changes color gradually and returns to red as the time passes. The nodes are useable again once they are red again.
 
+![gradual](https://user-images.githubusercontent.com/62358773/220121545-7b179512-c38a-4ec1-bbf0-afcc0218f205.png)
+
 ## <img src="https://user-images.githubusercontent.com/62358773/217943575-c86e500e-b4c0-458b-bd86-f08cfad44e68.png" width="5%" height="5%"> Tools used and brief description
 * WLS Windows Subsystem for Linux (v. 1.0.3.0) is a compatibility layer that enables users to run Linux applications on Windows 10 seamlessly, without the need for a virtual machine.
 

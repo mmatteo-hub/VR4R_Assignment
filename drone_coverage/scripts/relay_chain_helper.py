@@ -83,20 +83,3 @@ class RelayChainHelper:
         is_reached = data_array[0] == 'True'
         # Calling the callback
         self.on_goal_callback(identifier, is_reached)
-    
-
-    def send_halt_instruction(self, chain_pub, node_identifier, is_halting):
-        # Creating the instruction for halting the drone
-        msg = RelayInstruction()
-        msg.identifier = node_identifier
-        msg.instruction = HALT_INSTRUCTION_ID
-        msg.data = str(is_halting)
-        # Setting the requested position
-        chain_pub.publish(msg)
-    
-
-    def _on_halt_instruction(self, data):
-        # Parsing the boolaen
-        halting = data == 'True'
-        # Calling the callback
-        self.on_halt_instruction(halting)

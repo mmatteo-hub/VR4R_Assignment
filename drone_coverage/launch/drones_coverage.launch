@@ -1,5 +1,5 @@
 <launch>
-    <arg name="path_update_delta_cost" default="100.0" />
+    <arg name="path_update_delta_cost" default="3000.0" />
     <arg name="path_request_period_sec" default="5.0" />
     
     <node name="drones_coverage" pkg="drone_coverage" type="drones_coverage.py" output="screen">
