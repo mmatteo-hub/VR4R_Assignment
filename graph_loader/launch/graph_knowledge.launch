@@ -1,7 +1,7 @@
 <launch>
-    <arg name="dynamic_cost_delta" default="-0.1"/>
-    <arg name="dynamic_cost_update_period_sec" default="2"/>
-    <arg name="dynamic_cost_max" default="100" />
+    <arg name="dynamic_cost_delta" default="-5"/>
+    <arg name="dynamic_cost_update_period_sec" default="1"/>
+    <arg name="dynamic_cost_max" default="3000" />
     <arg name="nodes_base_cost" default="10000" />
 
     <node name="graph_knowledge" pkg="graph_loader" type="graph_knowledge.py" output="screen">
