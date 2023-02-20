@@ -3,6 +3,21 @@
 ## <img src="https://user-images.githubusercontent.com/62358773/217944729-f7aee557-c380-4701-9fdb-ba87cd48a881.png" width="5%" height="5%"> Introduction
 Our project focuses on conducting periodic surveillance in difficult-to-reach areas, especially in emergency situations. To achieve this, we use a team of UAVs for aerial observation, which offers increased efficiency and ability to access hard-to-reach locations. To maintain communication and coordination between UAVs, we employ a relay chaining approach. The system is controlled using the Robot Operating System (ROS) framework, with nodes designed to implement the coverage algorithm and relay chain system. Our goal is to develop a method for efficient and effective reconnaissance in emergency situations in areas with difficult terrain, utilizing UAVs and relay chaining.
 
+## <img src="https://user-images.githubusercontent.com/62358773/219962010-c4a5fd15-3b42-4269-9737-4ee4b22b8c11.png" width="5%" height="5%"> Result of the project
+Here there is the result of the project. In particular it is shown the partial coverage performed by the swarm of drones and then the total coverage of the graph performed. <br>
+In the pictures there are different spheres colors:
+* red: it means that this graph node has not been discovered yet;
+* green: it means the graph node has already been discovered by a drone.
+
+All the spheres started with red, then they become green when discovered by a drone.
+
+![partialCoverage](https://user-images.githubusercontent.com/62358773/219961846-fb946735-5451-41e4-a4f1-f80221d6be78.png)
+
+![fullCoverage](https://user-images.githubusercontent.com/62358773/219961853-dc62f10f-e4ea-4bc6-974e-b8395940c3a2.png)
+
+The only node which remains red is the starting one which is not a node to perform a coverage on but it only represents the base station. <br>
+The graph nodes changes color gradually and returns to red as the time passes. The nodes are useable again once they are red again.
+
 ## <img src="https://user-images.githubusercontent.com/62358773/217943575-c86e500e-b4c0-458b-bd86-f08cfad44e68.png" width="5%" height="5%"> Tools used and brief description
 * WLS Windows Subsystem for Linux (v. 1.0.3.0) is a compatibility layer that enables users to run Linux applications on Windows 10 seamlessly, without the need for a virtual machine.
 
